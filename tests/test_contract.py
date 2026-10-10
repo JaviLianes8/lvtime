@@ -4,7 +4,14 @@ import lvtime
 
 # The public API. Add every exported name here as the library grows; this list is the
 # contract and the test below fails if the module and this list disagree.
-PUBLIC_API: list[str] = []
+PUBLIC_API: list[str] = [
+    "LABVIEW_UNIX_EPOCH_OFFSET",
+    "LVTimestamp",
+    "from_datetime",
+    "read_timestamp",
+    "to_datetime",
+    "write_timestamp",
+]
 
 
 def test_all_lists_exactly_the_public_api() -> None:
