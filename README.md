@@ -57,6 +57,14 @@ LabVIEW-side (VIPM/JKI), not Python. `lvtime` fills that gap: a tiny, typed, zer
 big-endian on-disk form, and converts to a UTC-aware `datetime` only when you ask (rounded
 to the microsecond, which is all `datetime` can hold).
 
+## Scope
+
+`lvtime` handles the absolute-time value itself: the integer pair, the 16-byte big-endian
+record, and the `datetime` conversion. It does not parse whole TDMS or flattened-data
+files; it is the piece you reach for once you have the 16 raw bytes in hand, or the
+seconds-and-fraction pair you need to turn into a real instant. LabVIEW follows the
+Gregorian calendar and ignores leap seconds, and so does this library.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

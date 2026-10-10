@@ -16,3 +16,4 @@ All notable changes to this project are documented here. The format follows
 - `read_timestamp` and `write_timestamp`: read and write the 16-byte big-endian on-disk
   form used by TDMS and "Flatten To String".
 - `LABVIEW_UNIX_EPOCH_OFFSET`: the exact 2082844800 s epoch constant.
+- Zero runtime dependencies; typed (`py.typed`), tested on the success and failure paths.
