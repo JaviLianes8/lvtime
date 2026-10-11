@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0]
+
+- Exact conversions through integer and `Decimal` arithmetic, never a float:
+  `to_decimal` / `from_decimal`, `to_unix_decimal` / `from_unix_decimal` and the matching
+  `LVTimestamp` methods. These reproduce NI's exact documented bytes for values a double
+  cannot hold, such as -5.2 s (`0xCCCCCCCCCCCCCCCD`), and keep the full 2**-64 s resolution.
+  `from_decimal` accepts `Decimal`, `int` or `str` and refuses `float` so a lossy value
+  cannot slip in.
+- `LVTimestamp.hex` / `LVTimestamp.from_hex`: round trip the 16-byte on-disk form as a
+  32-character hex string, byte-order aware.
+- CLI: `--version`, a `decode --format decimal` output (exact seconds since 1904 and since
+  the Unix epoch), and the console script entry point now resolves to `lvtime._cli:main`.
+- CLI errors now exit with code 1 (was 2) and still print to stderr.
+- Documented two NI caveats: the 0.8 fraction only survives in fixed point, and NI's own
+  page mislabels `{3092601600, 0}` as 2002 when the byte value is 2001-12-31 UTC.
+
 ## [0.2.0]
 
 - `to_unix` / `from_unix` and `LVTimestamp.to_unix` / `LVTimestamp.from_unix`: convert
