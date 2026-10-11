@@ -65,11 +65,27 @@ def test_little_endian_flag_changes_the_bytes(capsys: pytest.CaptureFixture[str]
 
 def test_empty_input_reports_an_error(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(["decode", ""])
-    assert code == 2
+    assert code == 1
     assert "lvtime:" in capsys.readouterr().err
 
 
 def test_bad_hex_reports_an_error(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(["decode", "nothex"])
-    assert code == 2
+    assert code == 1
     assert capsys.readouterr().err.startswith("lvtime:")
+
+
+def test_version_flag_prints_the_version(capsys: pytest.CaptureFixture[str]) -> None:
+    import lvtime
+
+    with pytest.raises(SystemExit) as exit_info:
+        main(["--version"])
+    assert exit_info.value.code == 0
+    assert capsys.readouterr().out.strip() == f"lvtime {lvtime.__version__}"
+
+
+def test_decode_decimal_shows_the_exact_value(capsys: pytest.CaptureFixture[str]) -> None:
+    main(["decode", "--format", "decimal", EPOCH_HALF_HEX])
+    out = capsys.readouterr().out
+    assert "epoch1904=0.5" in out
+    assert "unix=" in out

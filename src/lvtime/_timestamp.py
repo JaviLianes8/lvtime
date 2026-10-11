@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 
-from . import _codec, _convert
+from . import _codec, _convert, _exact
 from ._codec import ByteOrder
+from ._exact import ExactInput
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,26 @@ class LVTimestamp:
         seconds, frac = _convert.from_float(value)
         return cls(seconds, frac)
 
+    def to_decimal(self) -> Decimal:
+        """Return seconds since the 1904 epoch as an exact Decimal (no float)."""
+        return _exact.to_decimal(self.seconds, self.frac)
+
+    @classmethod
+    def from_decimal(cls, value: ExactInput) -> LVTimestamp:
+        """Build a timestamp from exact seconds since the epoch (Decimal, int or str)."""
+        seconds, frac = _exact.from_decimal(value)
+        return cls(seconds, frac)
+
+    def to_unix_decimal(self) -> Decimal:
+        """Return this instant as exact Unix time (Decimal seconds since 1970-01-01 UTC)."""
+        return _exact.to_unix_decimal(self.seconds, self.frac)
+
+    @classmethod
+    def from_unix_decimal(cls, value: ExactInput) -> LVTimestamp:
+        """Build a timestamp from exact Unix time (Decimal, int or str)."""
+        seconds, frac = _exact.from_unix_decimal(value)
+        return cls(seconds, frac)
+
     def to_bytes(self, byteorder: ByteOrder = "big") -> bytes:
         """Return the 16-byte on-disk form in the given byte order (default big)."""
         return _codec.pack(self.seconds, self.frac, byteorder)
@@ -64,6 +86,15 @@ class LVTimestamp:
         """Build a timestamp from its 16-byte on-disk form (default big-endian)."""
         seconds, frac = _codec.unpack(data, byteorder)
         return cls(seconds, frac)
+
+    def hex(self, byteorder: ByteOrder = "big") -> str:
+        """Return the 16-byte on-disk form as a 32-character hex string (default big)."""
+        return self.to_bytes(byteorder).hex()
+
+    @classmethod
+    def from_hex(cls, text: str, byteorder: ByteOrder = "big") -> LVTimestamp:
+        """Build a timestamp from a 32-character hex string (default big-endian)."""
+        return cls.from_bytes(bytes.fromhex(text), byteorder)
 
 
 def read_timestamp(data: bytes, byteorder: ByteOrder = "big") -> LVTimestamp:

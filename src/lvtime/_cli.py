@@ -7,6 +7,7 @@ import json
 import sys
 from datetime import datetime, timezone
 
+from . import __version__
 from ._codec import ByteOrder
 from ._timestamp import LVTimestamp, read_timestamp, write_timestamp
 
@@ -16,6 +17,7 @@ examples:
   lvtime decode 00000000e32589408000000000000000
   echo 00000000e32589408000000000000000 | lvtime decode
   lvtime decode --format fields 00000000e32589408000000000000000
+  lvtime decode --format decimal 00000000e32589408000000000000000
   lvtime encode 2024-10-04T12:00:00.5+00:00
   lvtime encode --byteorder little 2024-10-04T12:00:00Z
 """
@@ -43,6 +45,8 @@ def _decode(hex_text: str, byteorder: ByteOrder, fmt: str) -> str:
     if fmt == "fields":
         dt = ts.to_datetime()
         return f"seconds={ts.seconds} frac={ts.frac} iso={dt.isoformat()} unix={ts.to_unix()!r}"
+    if fmt == "decimal":
+        return f"epoch1904={ts.to_decimal()} unix={ts.to_unix_decimal()}"
     payload = {
         "seconds": ts.seconds,
         "frac": ts.frac,
@@ -63,12 +67,13 @@ def _build_parser() -> argparse.ArgumentParser:
         epilog=_EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("--version", action="version", version=f"lvtime {__version__}")
     subs = parser.add_subparsers(dest="command", required=True)
 
     decode = subs.add_parser("decode", help="16-byte hex timestamp to an ISO datetime")
     decode.add_argument("hex", nargs="?", help="32 hex chars; read from stdin if omitted")
     decode.add_argument("--byteorder", choices=["big", "little"], default="big")
-    decode.add_argument("--format", choices=["iso", "fields", "json"], default="iso")
+    decode.add_argument("--format", choices=["iso", "fields", "json", "decimal"], default="iso")
 
     encode = subs.add_parser("encode", help="ISO datetime to a 16-byte hex timestamp")
     encode.add_argument("iso", nargs="?", help="ISO datetime (UTC if naive); stdin if omitted")
@@ -87,6 +92,6 @@ def main(argv: list[str] | None = None) -> int:
             line = _encode(_read_arg(args.iso), args.byteorder)
     except ValueError as error:
         print(f"lvtime: {error}", file=sys.stderr)
-        return 2
+        return 1
     print(line)
     return 0
