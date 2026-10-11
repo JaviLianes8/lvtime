@@ -12,6 +12,12 @@ from ._convert import (
     to_float,
     to_unix,
 )
+from ._exact import (
+    from_decimal,
+    from_unix_decimal,
+    to_decimal,
+    to_unix_decimal,
+)
 from ._timestamp import (
     LVTimestamp,
     read_timestamp,
@@ -20,20 +26,24 @@ from ._timestamp import (
     write_timestamps,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "LABVIEW_UNIX_EPOCH_OFFSET",
     "ByteOrder",
     "LVTimestamp",
     "from_datetime",
+    "from_decimal",
     "from_float",
     "from_unix",
+    "from_unix_decimal",
     "read_timestamp",
     "read_timestamps",
     "to_datetime",
+    "to_decimal",
     "to_float",
     "to_unix",
+    "to_unix_decimal",
     "write_timestamp",
     "write_timestamps",
 ]
