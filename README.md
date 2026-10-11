@@ -47,15 +47,18 @@ Two things trip people up every time:
   recurring complaint on the NI and LAVA forums.
 - **The precision.** The format resolves far below a nanosecond. Round-tripping through a
   C `double` or a `datetime` throws most of that away (about a 0.5 microsecond step through
-  a double), and existing readers inherit the loss: npTDMS surfaces timestamps as NumPy
-  `datetime64`, truncated to microseconds, with no way back to the original fraction.
+  a double). npTDMS's default read path surfaces timestamps as NumPy `datetime64` truncated
+  to microseconds, which loses the fraction; it does expose the lossless pair with
+  `raw_timestamps=True`, but only for timestamps read from inside a TDMS file.
 
-At the time of writing there is no PyPI package that converts a LabVIEW timestamp both ways
-with the full 128-bit precision and the correct signedness. The toolkits that exist are
-LabVIEW-side (VIPM/JKI), not Python. `lvtime` fills that gap: a tiny, typed, zero-dependency
-(stdlib only) library that keeps the exact integer pair, reads and writes the 16-byte
-big-endian on-disk form, and converts to a UTC-aware `datetime` only when you ask (rounded
-to the microsecond, which is all `datetime` can hold).
+Inside a TDMS file, then, npTDMS already covers the lossless case. What is missing is a
+standalone codec for the raw 16-byte form that is **not** part of a TDMS file: Flatten To
+String blobs, protocol payloads, anything where you hold the bytes directly. The LabVIEW-side
+toolkits (VIPM/JKI) run inside LabVIEW and ship no Python reader. `lvtime` fills that gap: a
+tiny, typed, zero-dependency (stdlib only) library that keeps the exact integer pair with the
+correct signedness, reads and writes the 16-byte big-endian on-disk form independent of any
+file container, and converts to a UTC-aware `datetime` only when you ask (rounded to the
+microsecond, which is all `datetime` can hold).
 
 ## Scope
 
