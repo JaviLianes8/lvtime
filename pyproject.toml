@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lvtime"
-version = "0.1.0"
+version = "0.2.0"
 description = "Lossless LabVIEW 128-bit timestamp (1904 epoch) to and from datetime, UTC, sub-microsecond preserved."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -19,6 +19,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = []
+
+[project.scripts]
+lvtime = "lvtime.__main__:main"
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "pytest", "build", "twine"]

@@ -1,13 +1,15 @@
-"""Conversion between LabVIEW absolute time and :class:`datetime.datetime`.
+"""Convert LabVIEW absolute time to and from datetime, Unix time and float seconds.
 
 LabVIEW absolute time counts from 1904-01-01 00:00:00 UTC. A value is a signed
 64-bit count of whole seconds plus an unsigned 64-bit fraction in units of
-2**-64 seconds. :mod:`datetime` resolves only to microseconds, so these helpers
-round to the nearest microsecond; the lossless path is the integer pair itself.
+2**-64 seconds. :mod:`datetime` resolves only to microseconds and a float holds
+about 52 bits of mantissa, so those two views round; the lossless path is the
+integer pair itself.
 """
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta, timezone
 
 # Seconds between the LabVIEW epoch (1904-01-01) and the Unix epoch (1970-01-01).
@@ -63,3 +65,34 @@ def from_datetime(dt: datetime) -> tuple[int, int]:
     frac = (micro_remainder * _FRAC_UNIT + _MICROS_PER_SECOND // 2) // _MICROS_PER_SECOND
     check_seconds(seconds)
     return seconds, frac
+
+
+def to_float(seconds: int, frac: int = 0) -> float:
+    """Return seconds since the 1904 epoch as a float (LabVIEW DBL coercion).
+
+    This matches wiring a LabVIEW timestamp into a double. A float keeps only
+    about 52 bits of mantissa, so sub-microsecond detail is lost.
+    """
+    check_frac(frac)
+    return seconds + frac / _FRAC_UNIT
+
+
+def from_float(value: float) -> tuple[int, int]:
+    """Convert seconds since the 1904 epoch (as a float) to ``(seconds, frac)``."""
+    seconds = math.floor(value)
+    frac = round((value - seconds) * _FRAC_UNIT)
+    if frac >= _FRAC_UNIT:
+        seconds += 1
+        frac -= _FRAC_UNIT
+    check_seconds(seconds)
+    return seconds, frac
+
+
+def to_unix(seconds: int, frac: int = 0) -> float:
+    """Return Unix time (float seconds since 1970-01-01 UTC), like :func:`time.time`."""
+    return to_float(seconds, frac) - LABVIEW_UNIX_EPOCH_OFFSET
+
+
+def from_unix(value: float) -> tuple[int, int]:
+    """Convert Unix time (float seconds since 1970-01-01 UTC) to ``(seconds, frac)``."""
+    return from_float(value + LABVIEW_UNIX_EPOCH_OFFSET)

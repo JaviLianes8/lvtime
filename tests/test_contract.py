@@ -6,11 +6,18 @@ import lvtime
 # contract and the test below fails if the module and this list disagree.
 PUBLIC_API: list[str] = [
     "LABVIEW_UNIX_EPOCH_OFFSET",
+    "ByteOrder",
     "LVTimestamp",
     "from_datetime",
+    "from_float",
+    "from_unix",
     "read_timestamp",
+    "read_timestamps",
     "to_datetime",
+    "to_float",
+    "to_unix",
     "write_timestamp",
+    "write_timestamps",
 ]
 
 

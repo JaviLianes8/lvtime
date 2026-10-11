@@ -2,7 +2,15 @@ from datetime import datetime, timezone
 
 import pytest
 
-from lvtime import LABVIEW_UNIX_EPOCH_OFFSET, from_datetime, to_datetime
+from lvtime import (
+    LABVIEW_UNIX_EPOCH_OFFSET,
+    from_datetime,
+    from_float,
+    from_unix,
+    to_datetime,
+    to_float,
+    to_unix,
+)
 
 UTC = timezone.utc
 
@@ -68,3 +76,45 @@ def test_to_datetime_rejects_negative_fraction() -> None:
 def test_to_datetime_overflows_outside_the_datetime_range() -> None:
     with pytest.raises(OverflowError):
         to_datetime(1 << 62)
+
+
+def test_to_unix_at_the_unix_epoch_is_zero() -> None:
+    assert to_unix(LABVIEW_UNIX_EPOCH_OFFSET) == 0.0
+
+
+def test_to_unix_keeps_the_half_second_fraction() -> None:
+    assert to_unix(LABVIEW_UNIX_EPOCH_OFFSET, 1 << 63) == 0.5
+
+
+def test_from_unix_of_zero_is_the_unix_epoch_pair() -> None:
+    assert from_unix(0.0) == (LABVIEW_UNIX_EPOCH_OFFSET, 0)
+
+
+def test_unix_round_trip_matches_datetime_timestamp() -> None:
+    dt = datetime(2021, 3, 14, 15, 9, 26, tzinfo=UTC)
+    seconds, frac = from_datetime(dt)
+    assert to_unix(seconds, frac) == dt.timestamp()
+
+
+def test_from_unix_handles_times_before_the_unix_epoch() -> None:
+    seconds, frac = from_unix(-0.5)
+    assert to_datetime(seconds, frac) == datetime(1969, 12, 31, 23, 59, 59, 500000, tzinfo=UTC)
+
+
+def test_to_float_is_seconds_since_the_1904_epoch() -> None:
+    assert to_float(10, 1 << 63) == 10.5
+
+
+def test_from_float_splits_into_seconds_and_fraction() -> None:
+    assert from_float(10.5) == (10, 1 << 63)
+
+
+def test_from_float_floors_negative_values() -> None:
+    seconds, frac = from_float(-1.5)
+    assert seconds == -2
+    assert frac == 1 << 63
+
+
+def test_to_float_rejects_fraction_out_of_range() -> None:
+    with pytest.raises(ValueError):
+        to_float(0, 1 << 64)
