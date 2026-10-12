@@ -2,7 +2,7 @@
 
 LabVIEW treats a timestamp as one signed 128-bit fixed-point number whose upper
 64 bits are the whole seconds and whose lower 64 bits are the fraction. Big-endian
-(``"big"``, the default, as Flatten To String, datalog files and big-endian TDMS
+(``"big"``, the default, as datalog files, big-endian TDMS and Flatten To String
 write it) puts the seconds first, most significant byte first. Little-endian
 (``"little"``, as little-endian TDMS files, the TDMS default, write it) is the
 same 16 bytes reversed: the fraction first, then the seconds, each least

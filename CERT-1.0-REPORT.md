@@ -78,7 +78,7 @@ new contract, 1 equivalent (the redundant code was removed).
 | M02 | signed 64-bit minimum excluded | `_validate.py` | killed | `test_timestamp.py::test_min_and_max_seconds_survive_the_byte_round_trip` |
 | M03 | fraction maximum off by one | `_validate.py` | killed | `test_convert.py::test_to_datetime_rejects_fraction_above_the_range` |
 | M04 | bool accepted as an integer | `_validate.py` | killed | `test_validation.py::test_pair_functions_refuse_non_integers[True-to_datetime]` |
-| M05 | messages echo huge integers | `_validate.py` | survived, then killed | new `test_validation::test_error_messages_stay_short` cases (a 4000-digit integer: Python refuses to print 30000 digits, which hid the bug) |
+| M05 | messages echo huge integers | `_validate.py` | survived, then killed | new `test_hostile::test_error_messages_stay_short` cases (a 4000-digit integer: Python refuses to print 30000 digits, which hid the bug) |
 | M06 | messages echo long input | `_validate.py` | killed | `test_cli_e2e.py::test_huge_bad_input_is_not_echoed_back` |
 | M07 | ties round up instead of to even | `_validate.py` | killed | `test_oracle.py::test_from_float_and_from_unix_round_the_exact_float_once` |
 | M08 | ties round down instead of to even | `_validate.py` | killed | `test_oracle.py::test_from_float_and_from_unix_round_the_exact_float_once` |

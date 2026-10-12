@@ -41,6 +41,15 @@ def test_every_public_callable_has_a_docstring_with_an_example(name: str) -> Non
     assert ">>>" in doc, name
 
 
+@pytest.mark.parametrize(
+    "name", [n for n, _ in inspect.getmembers(lvtime.LVTimestamp) if not n.startswith("_")]
+)
+def test_every_public_method_has_an_example(name: str) -> None:
+    member = getattr(lvtime.LVTimestamp, name)
+    if callable(member):
+        assert ">>>" in (member.__doc__ or ""), name
+
+
 def test_the_doctests_cover_every_public_name() -> None:
     finder = doctest.DocTestFinder()
     examples = "".join(

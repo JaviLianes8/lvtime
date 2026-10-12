@@ -16,6 +16,23 @@ from lvtime import LVTimestamp
 @pytest.mark.parametrize(
     "call",
     [
+        lambda: lvtime.from_float(1e300),
+        lambda: lvtime.from_unix(-1e300),
+        lambda: lvtime.from_decimal(10**60),
+        lambda: lvtime.from_decimal(2**63),
+        lambda: lvtime.from_decimal("9223372036854775807.99999999999999999999999"),
+        lambda: lvtime.from_unix_decimal("-1e30"),
+    ],
+)
+def test_out_of_range_values_share_one_message(call: Callable[[], object]) -> None:
+    with pytest.raises(ValueError, match=r"^the value is outside the timestamp range \(") as caught:
+        call()
+    assert ", got" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
         lambda: LVTimestamp(10**30_000, 0),
         lambda: LVTimestamp(10**4000, 0),
         lambda: lvtime.to_float(0, -(2**5000)),

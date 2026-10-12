@@ -1,17 +1,26 @@
 """Exact conversions through integers and :class:`~decimal.Decimal`, no float.
 
-A float keeps 53 significant bits, so 0.8 s lands on ``0xCCCCCCCCCCCCC000`` in
-2**-64 units instead of its true ``0xCCCCCCCCCCCCCCCD``. These helpers never touch
-a float: every result is the exact value, or the input rounded once to the nearest
-2**-64 s (ties to even).
+A float keeps 53 significant bits, so the fraction of -5.2 s lands on
+``0xCCCCCCCCCCCCC000`` in 2**-64 units instead of its true ``0xCCCCCCCCCCCCCCCD``.
+These helpers never touch a float: every result is the exact value, or the input
+rounded once to the nearest 2**-64 s (ties to even).
 """
 
 from __future__ import annotations
 
-from decimal import ROUND_05UP, Context, Decimal, InvalidOperation, localcontext
+from decimal import (
+    MAX_EMAX,
+    MIN_EMIN,
+    ROUND_05UP,
+    ROUND_HALF_EVEN,
+    Context,
+    Decimal,
+    InvalidOperation,
+    localcontext,
+)
 from typing import SupportsIndex
 
-from ._convert import LABVIEW_UNIX_EPOCH_OFFSET, split_units
+from ._convert import LABVIEW_UNIX_EPOCH_OFFSET, OUT_OF_RANGE, split_units
 from ._validate import I64_MAX, I64_MIN, check_pair, div_round_half_even, short
 
 ExactInput = Decimal | int | str
@@ -23,21 +32,32 @@ _POW5_64 = 5**64
 # of every tie (ties have 65 places), so the single rounding to 2**-64 stays exact.
 _PLACES = 100
 _QUANTUM = Decimal(1).scaleb(-_PLACES)
-_CONTEXT = Context(prec=_PLACES + 30)
+# Every setting is explicit, so a customised decimal.DefaultContext cannot leak in.
+_CONTEXT = Context(
+    prec=_PLACES + 30,
+    rounding=ROUND_HALF_EVEN,
+    Emin=MIN_EMIN,
+    Emax=MAX_EMAX,
+    capitals=1,
+    clamp=0,
+    flags=[],
+    traps=[InvalidOperation],
+)
 
 
 def _as_decimal(value: ExactInput) -> Decimal:
     if isinstance(value, bool):
         raise TypeError("value must be a Decimal, int or str, not a bool")
     if isinstance(value, Decimal):
-        number = value
+        number = Decimal(value)  # drops any subclass behaviour
     elif isinstance(value, int):
         if value.bit_length() > 2 * _FRAC_BITS:
-            raise ValueError(f"value is outside the timestamp range, got {short(value)}")
+            raise ValueError(OUT_OF_RANGE)
         number = Decimal(value)
     elif isinstance(value, str):
         try:
-            number = Decimal(value)
+            with localcontext(_CONTEXT):  # keeps the caller's flags clean
+                number = Decimal(value)
         except InvalidOperation:
             raise ValueError(f"not a decimal number: {short(value)}") from None
     else:
@@ -52,7 +72,7 @@ def _units(value: ExactInput, offset: int) -> int:
     """Return ``value + offset`` seconds as a count of 2**-64 s units, exactly rounded."""
     number = _as_decimal(value)
     if not I64_MIN - 1 - offset < number < I64_MAX + 1 - offset:
-        raise ValueError(f"value is outside the signed 64-bit seconds range, got {short(value)}")
+        raise ValueError(OUT_OF_RANGE)
     with localcontext(_CONTEXT):
         number = number.quantize(_QUANTUM, rounding=ROUND_05UP)
     numerator, denominator = number.as_integer_ratio()

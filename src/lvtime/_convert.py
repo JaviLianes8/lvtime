@@ -13,7 +13,11 @@ import math
 from datetime import datetime, timedelta, timezone
 from typing import Final, SupportsIndex
 
-from ._validate import as_int, check_pair, check_seconds, div_round_half_even
+from ._validate import I64_MAX, I64_MIN, as_int, check_pair, check_seconds, div_round_half_even
+
+OUT_OF_RANGE = (
+    "the value is outside the timestamp range (whole seconds must fit a signed 64-bit integer)"
+)
 
 LABVIEW_UNIX_EPOCH_OFFSET: Final[int] = 2082844800
 """Seconds from the LabVIEW epoch (1904-01-01 UTC) to the Unix epoch (1970-01-01 UTC)."""
@@ -68,9 +72,10 @@ def from_datetime(dt: datetime) -> tuple[int, int]:
 
 def _ratio(value: float) -> tuple[int, int]:
     if isinstance(value, float):
-        if not math.isfinite(value):
-            raise ValueError(f"value must be a finite number, got {value!r}")
-        return value.as_integer_ratio()
+        number = float(value)  # drops any subclass behaviour
+        if not math.isfinite(number):
+            raise ValueError(f"value must be a finite number, got {number!r}")
+        return number.as_integer_ratio()
     if not hasattr(type(value), "__index__"):
         raise TypeError(f"value must be a float or an integer, got {type(value).__name__}")
     return as_int("value", value), 1
@@ -79,7 +84,9 @@ def _ratio(value: float) -> tuple[int, int]:
 def split_units(units: int) -> tuple[int, int]:
     """Split a count of 2**-64 s units into a checked ``(seconds, frac)`` pair."""
     seconds, frac = divmod(units, _FRAC_UNIT)
-    return check_seconds(seconds), frac
+    if not I64_MIN <= seconds <= I64_MAX:
+        raise ValueError(OUT_OF_RANGE)
+    return seconds, frac
 
 
 def to_float(seconds: SupportsIndex, frac: SupportsIndex = 0) -> float:

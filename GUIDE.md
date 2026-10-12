@@ -70,7 +70,7 @@ The 16-byte form comes in two byte orders, chosen with `byteorder` (type `ByteOr
 
 | `byteorder` | bytes 0 to 7 | bytes 8 to 15 | written by |
 | --- | --- | --- | --- |
-| `"big"` | seconds, big-endian | fraction, big-endian | Flatten To String, datalog files, big-endian TDMS |
+| `"big"` | seconds, big-endian | fraction, big-endian | datalog files, big-endian TDMS, Flatten To String (default byte order) |
 | `"little"` | fraction, little-endian | seconds, little-endian | little-endian TDMS (the TDMS default) |
 
 The little-endian form is the big-endian one reversed byte for byte, because both store the
@@ -205,7 +205,10 @@ count leaves the signed 64-bit range raises `ValueError`.
 | `OverflowError` | `to_datetime` for an instant outside the years 1 to 9999 |
 
 Messages are short: they never repeat more than about 40 characters of what you passed, and
-huge integers are described by their size.
+huge integers are described by their size. Every conversion whose result leaves the 64-bit
+second range raises `ValueError` with the same message, "the value is outside the timestamp
+range". The conversions use their own decimal context, so your context (precision, traps,
+flags) neither changes their results nor is changed by them.
 
 ## Command line
 
@@ -217,10 +220,13 @@ The `lvtime` command (also `python -m lvtime`) has two subcommands:
 - `lvtime encode [ISO] [--byteorder big|little]` turns an ISO 8601 datetime into 32 hex
   digits. A trailing `Z` means UTC, and a datetime without an offset is taken as UTC.
   Fractional seconds of any length are kept (`12:00:00.123456789` is not cut to the
-  microsecond) and rounded once to the nearest 2**-64 s.
+  microsecond) and rounded once to the nearest 2**-64 s. Offsets may be written `+02:00` or
+  `+0200`; other forms are accepted as far as the running Python's
+  `datetime.fromisoformat` accepts them (3.11 and later take more than 3.10).
 
 Without the positional argument both read standard input. Exit codes: 0 success, 1 bad input
-(a one-line message on stderr), 2 bad usage. `iso`, `fields` and `json` need an instant
+(a one-line message on stderr) or a closed output pipe, 2 bad usage, 130 when interrupted with
+Ctrl-C. `iso`, `fields` and `json` need an instant
 inside the years 1 to 9999; `decimal` works for every value.
 
 ```

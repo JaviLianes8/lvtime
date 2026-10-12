@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from typing import SupportsIndex
 
 from . import _codec, _convert, _exact
 from ._codec import ByteOrder, BytesLike
@@ -12,7 +13,7 @@ from ._exact import ExactInput
 from ._validate import check_pair
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True, order=True, init=False)
 class LVTimestamp:
     """A LabVIEW absolute time held without loss as two integers.
 
@@ -35,13 +36,17 @@ class LVTimestamp:
     seconds: int
     frac: int = 0
 
-    def __post_init__(self) -> None:
-        seconds, frac = check_pair(self.seconds, self.frac)
-        object.__setattr__(self, "seconds", seconds)
-        object.__setattr__(self, "frac", frac)
+    def __init__(self, seconds: SupportsIndex, frac: SupportsIndex = 0) -> None:
+        checked_seconds, checked_frac = check_pair(seconds, frac)
+        object.__setattr__(self, "seconds", checked_seconds)
+        object.__setattr__(self, "frac", checked_frac)
 
     def to_datetime(self) -> datetime:
-        """Return a UTC-aware datetime rounded to the microsecond; see :func:`to_datetime`."""
+        """Return a UTC-aware datetime rounded to the microsecond; see :func:`to_datetime`.
+
+        >>> LVTimestamp(0, 1 << 63).to_datetime().isoformat()
+        '1904-01-01T00:00:00.500000+00:00'
+        """
         return _convert.to_datetime(self.seconds, self.frac)
 
     @classmethod
@@ -55,7 +60,11 @@ class LVTimestamp:
         return cls(*_convert.from_datetime(dt))
 
     def to_unix(self) -> float:
-        """Return float seconds since 1970-01-01 UTC; see :func:`to_unix`."""
+        """Return float seconds since 1970-01-01 UTC; see :func:`to_unix`.
+
+        >>> LVTimestamp(2082844800, 1 << 62).to_unix()
+        0.25
+        """
         return _convert.to_unix(self.seconds, self.frac)
 
     @classmethod
@@ -68,7 +77,11 @@ class LVTimestamp:
         return cls(*_convert.from_unix(value))
 
     def to_float(self) -> float:
-        """Return float seconds since the 1904 epoch; see :func:`to_float`."""
+        """Return float seconds since the 1904 epoch; see :func:`to_float`.
+
+        >>> LVTimestamp(-1, 1 << 63).to_float()
+        -0.5
+        """
         return _convert.to_float(self.seconds, self.frac)
 
     @classmethod
@@ -98,7 +111,11 @@ class LVTimestamp:
         return cls(*_exact.from_decimal(value))
 
     def to_unix_decimal(self) -> Decimal:
-        """Return exact Unix time as a Decimal; see :func:`to_unix_decimal`."""
+        """Return exact Unix time as a Decimal; see :func:`to_unix_decimal`.
+
+        >>> LVTimestamp(2082844800, 1).to_unix_decimal()
+        Decimal('5.42101086242752217003726400434970855712890625E-20')
+        """
         return _exact.to_unix_decimal(self.seconds, self.frac)
 
     @classmethod

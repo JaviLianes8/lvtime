@@ -10,6 +10,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from decimal import Context, Decimal, localcontext
+from typing import NoReturn, TextIO
 
 from . import __version__
 from ._codec import ByteOrder
@@ -32,26 +33,40 @@ exit codes: 0 success, 1 bad input, 2 bad usage
 
 
 def _read_arg(value: str | None) -> str:
-    text = sys.stdin.read() if value is None else value
+    if value is None:
+        if sys.stdin is None:
+            raise ValueError("no input given (pass an argument or pipe it on stdin)")
+        try:
+            value = sys.stdin.read()
+        except OSError as error:
+            raise ValueError(f"cannot read stdin: {error.strerror or error}") from None
+    text = value
     text = text.strip()
     if not text:
         raise ValueError("no input given (pass an argument or pipe it on stdin)")
     return text
 
 
-# A time with seconds, an optional fraction of any length, and an optional UTC offset.
+# A date and a time of day with a fraction of any length; the rest is the UTC offset.
 _ISO_FRACTION = re.compile(
-    r"(?P<head>.+\d{2}:\d{2}:\d{2})[.,](?P<frac>\d+)(?P<tail>[Zz]|[+-][\d:.]+)?"
+    r"(?P<head>\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})[.,](?P<frac>\d+)(?P<tail>.*)", re.ASCII
+)
+# A basic-format offset such as +0200, which fromisoformat on Python 3.10 refuses.
+_BASIC_OFFSET = re.compile(
+    r"(?P<head>.*\d)(?P<sign>[+-])(?P<hours>\d{2})(?P<minutes>\d{2})", re.ASCII
 )
 
 
-def _parse_iso(text: str) -> datetime:
+def _parse_iso(text: str, shown: str) -> datetime:
     if text[-1:] in ("Z", "z"):
         text = text[:-1] + "+00:00"
+    basic = _BASIC_OFFSET.fullmatch(text)
+    if basic is not None and ":" in basic["head"]:
+        text = f"{basic['head']}{basic['sign']}{basic['hours']}:{basic['minutes']}"
     try:
         dt = datetime.fromisoformat(text)
     except ValueError:
-        raise ValueError(f"not an ISO 8601 datetime: {short(text)}") from None
+        raise ValueError(f"not an ISO 8601 datetime: {short(shown)}") from None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
@@ -61,11 +76,11 @@ def _parse_iso_exact(text: str) -> LVTimestamp:
     """Parse ISO 8601 text, keeping every fractional digit (datetime stops at 6)."""
     match = _ISO_FRACTION.fullmatch(text)
     if match is None:
-        return LVTimestamp.from_datetime(_parse_iso(text))
-    whole = LVTimestamp.from_datetime(_parse_iso(match["head"] + (match["tail"] or "")))
+        return LVTimestamp.from_datetime(_parse_iso(text, text))
+    whole = LVTimestamp.from_datetime(_parse_iso(match["head"] + match["tail"], text))
     digits = match["frac"]
-    with localcontext(Context(prec=len(digits) + 30)):
-        return LVTimestamp.from_decimal(whole.seconds + Decimal("0." + digits))
+    with localcontext(Context(prec=len(digits) + 100)):
+        return LVTimestamp.from_decimal(whole.to_decimal() + Decimal("0." + digits))
 
 
 def _decode(hex_text: str, byteorder: ByteOrder, fmt: str) -> str:
@@ -94,8 +109,14 @@ def _encode(iso_text: str, byteorder: ByteOrder) -> str:
     return write_timestamp(_parse_iso_exact(iso_text), byteorder).hex()
 
 
+class _Parser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        # argparse repeats a bad argument in full; keep usage errors one short line.
+        super().error(message if len(message) <= 200 else message[:200] + "...")
+
+
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = _Parser(
         prog="lvtime",
         description=_DESCRIPTION,
         epilog=_EPILOG,
@@ -125,11 +146,24 @@ def main(argv: list[str] | None = None) -> int:
         else:
             line = _encode(_read_arg(args.iso), args.byteorder)
     except (ValueError, OverflowError) as error:
-        print(f"lvtime: {error}", file=sys.stderr)
+        _report(f"lvtime: {error}")
         return 1
     except KeyboardInterrupt:
         return 130
     return _emit(line)
+
+
+def _report(message: str) -> None:
+    try:
+        print(message, file=sys.stderr, flush=True)
+    except (OSError, ValueError, AttributeError):
+        _silence(sys.stderr)
+
+
+def _silence(stream: TextIO | None) -> None:
+    """Point a dead stream at the null device so the exit flush cannot fail."""
+    with contextlib.suppress(OSError, ValueError, AttributeError):
+        os.dup2(os.open(os.devnull, os.O_WRONLY), stream.fileno())  # type: ignore[union-attr]
 
 
 def _emit(line: str) -> int:
@@ -137,7 +171,6 @@ def _emit(line: str) -> int:
         print(line, flush=True)
     except OSError:
         # The reader went away (a closed pipe is EPIPE on POSIX, EINVAL on Windows): exit quietly.
-        with contextlib.suppress(OSError, ValueError):
-            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        _silence(sys.stdout)
         return 1
     return 0

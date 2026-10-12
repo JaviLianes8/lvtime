@@ -144,6 +144,9 @@ def test_public_signatures_are_the_stable_ones() -> None:
             "(timestamps: 'Iterable[LVTimestamp]', byteorder: 'ByteOrder' = 'big') -> 'bytes'"
         ),
     }
+    assert str(inspect.signature(lvtime.LVTimestamp)) == (
+        "(seconds: 'SupportsIndex', frac: 'SupportsIndex' = 0) -> 'None'"
+    )
     for name, signature in expected.items():
         assert str(inspect.signature(getattr(lvtime, name))) == signature, name
 

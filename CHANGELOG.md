@@ -32,7 +32,13 @@ in the guide, and the command-line options, output formats and exit codes.
   (`Decimal('10.5')`, not 64 decimal places).
 - `LVTimestamp` and every function taking a `(seconds, frac)` pair refuse floats, strings and
   `bool` with `TypeError` (0.3.0 stored `LVTimestamp(1.5, 0)` and failed later) and accept any
-  integer type with `__index__`, such as NumPy integers, stored as plain `int`.
+  integer type with `__index__`, such as NumPy integers, stored as plain `int`. The constructor
+  is typed `LVTimestamp(seconds: SupportsIndex, frac: SupportsIndex = 0)` to match.
+- Conversions use a fully specified private decimal context: a customised
+  `decimal.DefaultContext` or the caller's context no longer changes results or raises
+  `decimal.Inexact`, and the caller's decimal flags are left untouched.
+- A result outside the 64-bit second range raises `ValueError` with one message for every
+  conversion.
 - `to_datetime`, `to_float`, `to_unix`, `to_decimal` and `to_unix_decimal` check that
   `seconds` fits a signed 64-bit integer. `to_datetime` raises `OverflowError` with its own
   short message outside the years 1 to 9999.
@@ -47,7 +53,10 @@ in the guide, and the command-line options, output formats and exit codes.
 - Error messages never repeat more than about 40 characters of the input.
 - CLI: `encode` keeps every fractional digit of the ISO text (0.3.0 cut it to the
   microsecond) and accepts fractions of any length on Python 3.10, whose `fromisoformat`
-  only takes 3 or 6 digits (`lvtime encode 2024-10-04T12:00:00.5Z` failed there).
+  only takes 3 or 6 digits (`lvtime encode 2024-10-04T12:00:00.5Z` failed there), plus
+  `+0200` style offsets there; offsets with fractional seconds are applied exactly.
+- CLI: a missing or unreadable stdin, a closed stderr and very long bad arguments no longer
+  give a traceback, a wrong exit code or a huge message.
 - CLI: a timestamp outside the `datetime` range exits 1 with a message instead of a
   traceback (`--format decimal` still works for it); bad hex or ISO text is not echoed back
   in full; a closed output pipe exits quietly; `--help` lists the exit codes.

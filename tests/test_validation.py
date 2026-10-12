@@ -60,7 +60,7 @@ def test_pair_functions_accept_the_extreme_fields(function: Callable[..., object
 
 
 def test_integer_like_values_are_accepted_and_stored_as_int() -> None:
-    ts = LVTimestamp(_Index(5), _Index(7))  # type: ignore[arg-type]
+    ts = LVTimestamp(_Index(5), _Index(7))
     assert (ts.seconds, ts.frac) == (5, 7)
     assert type(ts.seconds) is int and type(ts.frac) is int
     assert lvtime.to_float(_Index(1), _Index(1 << 63)) == 1.5
