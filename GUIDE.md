@@ -71,10 +71,11 @@ The 16-byte form comes in two byte orders, chosen with `byteorder` (type `ByteOr
 | `byteorder` | bytes 0 to 7 | bytes 8 to 15 | written by |
 | --- | --- | --- | --- |
 | `"big"` | seconds, big-endian | fraction, big-endian | Flatten To String, datalog files, big-endian TDMS |
-| `"little"` | fraction, little-endian | seconds, little-endian | little-endian TDMS (the TDMS default), memory on x86 |
+| `"little"` | fraction, little-endian | seconds, little-endian | little-endian TDMS (the TDMS default) |
 
 The little-endian form is the big-endian one reversed byte for byte, because both store the
-same 128-bit number.
+same 128-bit number. The test suite checks both against files LabVIEW 2026 wrote in one run: a
+TDMS file and a datalog file that hold the same instants.
 
 ```pycon
 >>> from lvtime import LVTimestamp, read_timestamp, write_timestamp, read_timestamps, write_timestamps
@@ -164,6 +165,20 @@ Decimal('5.42101086242752217003726400434970855712890625E-20')
 Decimal('1728043200.5')
 >>> from_unix_decimal(Decimal("1728043200.5"))
 (3810888000, 9223372036854775808)
+
+```
+
+Arithmetic on the returned `Decimal` follows your decimal context, which keeps 28 digits by
+default. A present-day instant needs up to 84, so raise the precision before adding or
+subtracting timestamps exactly:
+
+```pycon
+>>> from decimal import Context, localcontext
+>>> from lvtime import from_decimal, to_decimal
+>>> with localcontext(Context(prec=100)):
+...     total = to_decimal(3810888000, 1 << 63) + to_decimal(0, 1)
+>>> from_decimal(total)
+(3810888000, 9223372036854775809)
 
 ```
 

@@ -90,8 +90,10 @@ Two details make hand-written conversions go wrong:
 - **Precision.** The fraction resolves 2**-64 s. A double near today's second counts steps
   in about 0.48 microseconds, and a `datetime` in whole microseconds, so both views round.
 - **Layout.** Flatten To String and datalog files write the 16 bytes big-endian, seconds
-  first. Little-endian TDMS files (the TDMS default) write the same 128-bit number reversed,
-  fraction first ([NI, TDMS File Format Internal Structure](https://www.ni.com/en/support/documentation/supplemental/07/tdms-file-format-internal-structure.html)).
+  first. Little-endian TDMS files, the default
+  ([NI, TDMS File Format Internal Structure](https://www.ni.com/en/support/documentation/supplemental/07/tdms-file-format-internal-structure.html)),
+  write the same 128-bit number reversed, fraction first. The tests pin both layouts to
+  files written by LabVIEW 2026.
 
 [npTDMS](https://github.com/adamreeve/npTDMS) reads timestamps inside TDMS files; by default
 it returns NumPy `datetime64` values, and its `raw_timestamps=True` option keeps the seconds
