@@ -11,11 +11,31 @@ requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Javier Lianes", email = "javier@lianes8studio.com" }]
-keywords = ["labview", "timestamp", "datetime", "tdms", "ni", "1904", "epoch"]
+keywords = [
+    "labview",
+    "timestamp",
+    "datetime",
+    "tdms",
+    "national-instruments",
+    "1904",
+    "epoch",
+    "flatten",
+    "decimal",
+]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
 dependencies = []
@@ -27,8 +47,9 @@ lvtime = "lvtime._cli:main"
 dev = ["ruff", "mypy", "pytest", "build", "twine"]
 
 [project.urls]
-Homepage = "https://lianes8studio.com"
-Repository = "https://github.com/JaviLianes8/lvtime"
+Homepage = "https://github.com/JaviLianes8/lvtime"
+Source = "https://github.com/JaviLianes8/lvtime"
+Documentation = "https://github.com/JaviLianes8/lvtime/blob/main/GUIDE.md"
 Issues = "https://github.com/JaviLianes8/lvtime/issues"
 Changelog = "https://github.com/JaviLianes8/lvtime/blob/main/CHANGELOG.md"
 LinkedIn = "https://www.linkedin.com/in/jlianes/"
@@ -36,6 +57,19 @@ Funding = "https://buymeacoffee.com/jlianesglrs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lvtime"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "src/lvtime",
+    "tests",
+    "README.md",
+    "GUIDE.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+# The fetched vendor and upstream references are test-side copies only; they are not distributed.
+exclude = ["**/__pycache__", "**/*.pyc", "tests/fixtures/sources/*.html", "tests/fixtures/sources/*.txt"]
 
 [tool.ruff]
 line-length = 100
