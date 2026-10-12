@@ -116,8 +116,8 @@ def main(argv: list[str] | None = None) -> int:
 def _emit(line: str) -> int:
     try:
         print(line, flush=True)
-    except BrokenPipeError:
-        # The reader went away (``lvtime ... | head -c0``): exit quietly, as cat does.
+    except OSError:
+        # The reader went away (a closed pipe is EPIPE on POSIX, EINVAL on Windows): exit quietly.
         with contextlib.suppress(OSError, ValueError):
             os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
         return 1

@@ -23,11 +23,11 @@ SOURCES = {
         "https://www.ni.com/en/support/documentation/supplemental/07/"
         "tdms-file-format-internal-structure.html"
     ),
-    "nptdms-types.py": "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/types.py",
-    "nptdms-timestamp.py": (
+    "nptdms-types.py.txt": "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/types.py",
+    "nptdms-timestamp.py.txt": (
         "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/timestamp.py"
     ),
-    "nptdms-tdms.py": "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/tdms.py",
+    "nptdms-tdms.py.txt": "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/tdms.py",
 }
 
 FOLDER = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "sources"

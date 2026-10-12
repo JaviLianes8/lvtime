@@ -73,7 +73,7 @@ def to_decimal(seconds: SupportsIndex, frac: SupportsIndex = 0) -> Decimal:
     Every 2**-64 s fraction has a finite decimal expansion, so nothing is rounded.
 
     >>> to_decimal(-6, 0xCCCCCCCCCCCCCCCD)
-    Decimal('-5.1999999999999999999864474728691872883029282093048095703125')
+    Decimal('-5.1999999999999999999891579782751449556599254719913005828857421875')
     >>> to_decimal(10, 1 << 63)
     Decimal('10.5')
     """

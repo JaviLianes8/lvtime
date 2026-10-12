@@ -16,21 +16,21 @@
       "sha256": "e2d837cc2c1a4fbc5be9b2e078fd48be0e125d3fe0ddda42d240528ac6ab263b"
     },
     {
-      "file": "nptdms-types.py",
+      "file": "nptdms-types.py.txt",
       "url": "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/types.py",
       "fetched": "2026-10-12",
       "size": 9026,
       "sha256": "4141f512aac5d915ff4932ad09533c74e7486aa3ba5a5108ba1332ca862be761"
     },
     {
-      "file": "nptdms-timestamp.py",
+      "file": "nptdms-timestamp.py.txt",
       "url": "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/timestamp.py",
       "fetched": "2026-10-12",
       "size": 5133,
       "sha256": "84e9d8fd8ab296c261be82d8cde07dc94dab5bc15ed9659ece26cf59b9b207fe"
     },
     {
-      "file": "nptdms-tdms.py",
+      "file": "nptdms-tdms.py.txt",
       "url": "https://raw.githubusercontent.com/adamreeve/npTDMS/master/nptdms/tdms.py",
       "fetched": "2026-10-12",
       "size": 39013,
