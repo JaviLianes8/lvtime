@@ -190,6 +190,8 @@ def test_from_hex_refuses_non_text_and_bad_hex() -> None:
     "call",
     [
         lambda: LVTimestamp(10**30_000, 0),
+        lambda: LVTimestamp(10**4000, 0),
+        lambda: lvtime.to_float(0, -(2**5000)),
         lambda: LVTimestamp(0, -(10**30_000)),
         lambda: lvtime.from_decimal("9" * 1_000_000),
         lambda: lvtime.from_decimal("x" * 1_000_000),

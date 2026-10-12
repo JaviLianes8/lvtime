@@ -216,6 +216,8 @@ The `lvtime` command (also `python -m lvtime`) has two subcommands:
   `json`), or the exact seconds since 1904 and since 1970 (`decimal`).
 - `lvtime encode [ISO] [--byteorder big|little]` turns an ISO 8601 datetime into 32 hex
   digits. A trailing `Z` means UTC, and a datetime without an offset is taken as UTC.
+  Fractional seconds of any length are kept (`12:00:00.123456789` is not cut to the
+  microsecond) and rounded once to the nearest 2**-64 s.
 
 Without the positional argument both read standard input. Exit codes: 0 success, 1 bad input
 (a one-line message on stderr), 2 bad usage. `iso`, `fields` and `json` need an instant

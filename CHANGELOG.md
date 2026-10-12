@@ -45,6 +45,9 @@ in the guide, and the command-line options, output formats and exit codes.
   for items that are not `LVTimestamp`, and `write_timestamps` takes any iterable and checks
   `byteorder` even when empty.
 - Error messages never repeat more than about 40 characters of the input.
+- CLI: `encode` keeps every fractional digit of the ISO text (0.3.0 cut it to the
+  microsecond) and accepts fractions of any length on Python 3.10, whose `fromisoformat`
+  only takes 3 or 6 digits (`lvtime encode 2024-10-04T12:00:00.5Z` failed there).
 - CLI: a timestamp outside the `datetime` range exits 1 with a message instead of a
   traceback (`--format decimal` still works for it); bad hex or ISO text is not echoed back
   in full; a closed output pipe exits quietly; `--help` lists the exit codes.

@@ -71,7 +71,7 @@ def _ratio(value: float) -> tuple[int, int]:
         if not math.isfinite(value):
             raise ValueError(f"value must be a finite number, got {value!r}")
         return value.as_integer_ratio()
-    if isinstance(value, bool) or not hasattr(type(value), "__index__"):
+    if not hasattr(type(value), "__index__"):
         raise TypeError(f"value must be a float or an integer, got {type(value).__name__}")
     return as_int("value", value), 1
 

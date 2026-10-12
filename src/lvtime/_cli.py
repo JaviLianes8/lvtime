@@ -6,8 +6,10 @@ import argparse
 import contextlib
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
+from decimal import Context, Decimal, localcontext
 
 from . import __version__
 from ._codec import ByteOrder
@@ -37,6 +39,12 @@ def _read_arg(value: str | None) -> str:
     return text
 
 
+# A time with seconds, an optional fraction of any length, and an optional UTC offset.
+_ISO_FRACTION = re.compile(
+    r"(?P<head>.+\d{2}:\d{2}:\d{2})[.,](?P<frac>\d+)(?P<tail>[Zz]|[+-][\d:.]+)?"
+)
+
+
 def _parse_iso(text: str) -> datetime:
     if text[-1:] in ("Z", "z"):
         text = text[:-1] + "+00:00"
@@ -47,6 +55,17 @@ def _parse_iso(text: str) -> datetime:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
+
+
+def _parse_iso_exact(text: str) -> LVTimestamp:
+    """Parse ISO 8601 text, keeping every fractional digit (datetime stops at 6)."""
+    match = _ISO_FRACTION.fullmatch(text)
+    if match is None:
+        return LVTimestamp.from_datetime(_parse_iso(text))
+    whole = LVTimestamp.from_datetime(_parse_iso(match["head"] + (match["tail"] or "")))
+    digits = match["frac"]
+    with localcontext(Context(prec=len(digits) + 30)):
+        return LVTimestamp.from_decimal(whole.seconds + Decimal("0." + digits))
 
 
 def _decode(hex_text: str, byteorder: ByteOrder, fmt: str) -> str:
@@ -72,7 +91,7 @@ def _decode(hex_text: str, byteorder: ByteOrder, fmt: str) -> str:
 
 
 def _encode(iso_text: str, byteorder: ByteOrder) -> str:
-    return write_timestamp(LVTimestamp.from_datetime(_parse_iso(iso_text)), byteorder).hex()
+    return write_timestamp(_parse_iso_exact(iso_text), byteorder).hex()
 
 
 def _build_parser() -> argparse.ArgumentParser:
