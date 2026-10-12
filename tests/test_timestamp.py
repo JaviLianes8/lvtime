@@ -91,10 +91,11 @@ def test_read_timestamp_rejects_wrong_length() -> None:
         read_timestamp(b"\x00\x00\x00")
 
 
-def test_little_endian_reverses_each_eight_byte_field() -> None:
+def test_little_endian_is_the_whole_128_bit_value_reversed() -> None:
     ts = LVTimestamp(1, 1 << 63)
-    expected = (1).to_bytes(8, "little") + (1 << 63).to_bytes(8, "little")
+    expected = (1 << 63).to_bytes(8, "little") + (1).to_bytes(8, "little")
     assert write_timestamp(ts, "little") == expected
+    assert write_timestamp(ts, "little") == write_timestamp(ts, "big")[::-1]
 
 
 def test_little_endian_round_trip() -> None:

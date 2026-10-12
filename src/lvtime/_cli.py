@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import sys
 from datetime import datetime, timezone
 
 from . import __version__
 from ._codec import ByteOrder
-from ._timestamp import LVTimestamp, read_timestamp, write_timestamp
+from ._io import read_timestamp, write_timestamp
+from ._timestamp import LVTimestamp
+from ._validate import short
 
 _DESCRIPTION = "Decode and encode LabVIEW 128-bit timestamps (1904 epoch)."
 _EPILOG = """\
@@ -20,6 +24,8 @@ examples:
   lvtime decode --format decimal 00000000e32589408000000000000000
   lvtime encode 2024-10-04T12:00:00.5+00:00
   lvtime encode --byteorder little 2024-10-04T12:00:00Z
+
+exit codes: 0 success, 1 bad input, 2 bad usage
 """
 
 
@@ -32,14 +38,23 @@ def _read_arg(value: str | None) -> str:
 
 
 def _parse_iso(text: str) -> datetime:
-    dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    if text[-1:] in ("Z", "z"):
+        text = text[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(text)
+    except ValueError:
+        raise ValueError(f"not an ISO 8601 datetime: {short(text)}") from None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
 
 
 def _decode(hex_text: str, byteorder: ByteOrder, fmt: str) -> str:
-    ts = read_timestamp(bytes.fromhex(hex_text), byteorder)
+    try:
+        raw = bytes.fromhex(hex_text)
+    except ValueError:
+        raise ValueError(f"not a hex string: {short(hex_text)}") from None
+    ts = read_timestamp(raw, byteorder)
     if fmt == "iso":
         return ts.to_datetime().isoformat()
     if fmt == "fields":
@@ -90,8 +105,20 @@ def main(argv: list[str] | None = None) -> int:
             line = _decode(_read_arg(args.hex), args.byteorder, args.format)
         else:
             line = _encode(_read_arg(args.iso), args.byteorder)
-    except ValueError as error:
+    except (ValueError, OverflowError) as error:
         print(f"lvtime: {error}", file=sys.stderr)
         return 1
-    print(line)
+    except KeyboardInterrupt:
+        return 130
+    return _emit(line)
+
+
+def _emit(line: str) -> int:
+    try:
+        print(line, flush=True)
+    except BrokenPipeError:
+        # The reader went away (``lvtime ... | head -c0``): exit quietly, as cat does.
+        with contextlib.suppress(OSError, ValueError):
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return 1
     return 0

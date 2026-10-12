@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pytest
 
+import lvtime
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # NI's documented 2002 row: {3092601600, 0} = 0xB8555B00, which is 2001-12-31 UTC.
@@ -55,7 +57,7 @@ def _run(script: Path, *args: str, stdin: str | None = None) -> subprocess.Compl
 def test_console_script_reports_the_version(installed_cli: Path) -> None:
     result = _run(installed_cli, "--version")
     assert result.returncode == 0
-    assert result.stdout.strip() == "lvtime 0.3.0"
+    assert result.stdout.strip() == f"lvtime {lvtime.__version__}"
 
 
 def test_console_script_decodes_the_ni_2002_value(installed_cli: Path) -> None:

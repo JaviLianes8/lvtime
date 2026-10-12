@@ -1,66 +1,116 @@
 """Exact conversions through integers and :class:`~decimal.Decimal`, no float.
 
-A float keeps only about 52 bits of mantissa, so 0.8 s lands on
-``0xCCCCCCCCCCCCC000`` in 2**-64 units instead of its true ``0xCCCCCCCCCCCCCCCD``.
-These helpers never touch a float, so they reproduce the exact fixed-point value
-NI documents and keep the full 2**-64 s resolution end to end.
+A float keeps 53 significant bits, so 0.8 s lands on ``0xCCCCCCCCCCCCC000`` in
+2**-64 units instead of its true ``0xCCCCCCCCCCCCCCCD``. These helpers never touch
+a float: every result is the exact value, or the input rounded once to the nearest
+2**-64 s (ties to even).
 """
 
 from __future__ import annotations
 
-from decimal import ROUND_FLOOR, ROUND_HALF_EVEN, Context, Decimal, localcontext
+from decimal import ROUND_05UP, Context, Decimal, InvalidOperation, localcontext
+from typing import SupportsIndex
 
-from ._convert import LABVIEW_UNIX_EPOCH_OFFSET, check_frac, check_seconds
-
-# 2**-64 = 5**64 * 10**-64 exactly, so a fraction scaled this way is exact.
-_FRAC_UNIT = 1 << 64
-_POW5_64 = 5**64
-# Enough precision for a 19-digit second count plus 64 fractional digits.
-_CONTEXT = Context(prec=96)
+from ._convert import LABVIEW_UNIX_EPOCH_OFFSET, split_units
+from ._validate import I64_MAX, I64_MIN, check_pair, div_round_half_even, short
 
 ExactInput = Decimal | int | str
 
+_FRAC_BITS = 64
+# 2**-64 = 5**64 * 10**-64 exactly, so a fraction scaled this way is exact.
+_POW5_64 = 5**64
+# Inputs are first cut to 100 decimal places with ROUND_05UP, which keeps the side
+# of every tie (ties have 65 places), so the single rounding to 2**-64 stays exact.
+_PLACES = 100
+_QUANTUM = Decimal(1).scaleb(-_PLACES)
+_CONTEXT = Context(prec=_PLACES + 30)
+
 
 def _as_decimal(value: ExactInput) -> Decimal:
-    if isinstance(value, float):  # pragma: no cover - guarded by typing too
-        raise TypeError("pass a Decimal, int or str, not a float, for an exact value")
-    return Decimal(value)
+    if isinstance(value, bool):
+        raise TypeError("value must be a Decimal, int or str, not a bool")
+    if isinstance(value, Decimal):
+        number = value
+    elif isinstance(value, int):
+        if value.bit_length() > 2 * _FRAC_BITS:
+            raise ValueError(f"value is outside the timestamp range, got {short(value)}")
+        number = Decimal(value)
+    elif isinstance(value, str):
+        try:
+            number = Decimal(value)
+        except InvalidOperation:
+            raise ValueError(f"not a decimal number: {short(value)}") from None
+    else:
+        hint = " (use from_float for a float)" if isinstance(value, float) else ""
+        raise TypeError(f"value must be a Decimal, int or str, got {type(value).__name__}{hint}")
+    if not number.is_finite():
+        raise ValueError(f"value must be a finite number, got {short(value)}")
+    return number
 
 
-def to_decimal(seconds: int, frac: int = 0) -> Decimal:
-    """Return seconds since the 1904 epoch as an exact :class:`~decimal.Decimal`."""
-    check_frac(frac)
+def _units(value: ExactInput, offset: int) -> int:
+    """Return ``value + offset`` seconds as a count of 2**-64 s units, exactly rounded."""
+    number = _as_decimal(value)
+    if not I64_MIN - 1 - offset < number < I64_MAX + 1 - offset:
+        raise ValueError(f"value is outside the signed 64-bit seconds range, got {short(value)}")
     with localcontext(_CONTEXT):
-        return Decimal(seconds) + Decimal(frac * _POW5_64).scaleb(-64)
+        number = number.quantize(_QUANTUM, rounding=ROUND_05UP)
+    numerator, denominator = number.as_integer_ratio()
+    units = div_round_half_even(numerator << _FRAC_BITS, denominator)
+    return units + (offset << _FRAC_BITS)
+
+
+def _exact(seconds: int, frac: int) -> Decimal:
+    if frac == 0:
+        return Decimal(seconds)
+    with localcontext(_CONTEXT):
+        return (Decimal(seconds) + Decimal(frac * _POW5_64).scaleb(-64)).normalize()
+
+
+def to_decimal(seconds: SupportsIndex, frac: SupportsIndex = 0) -> Decimal:
+    """Return seconds since the 1904 epoch as an exact :class:`~decimal.Decimal`.
+
+    Every 2**-64 s fraction has a finite decimal expansion, so nothing is rounded.
+
+    >>> to_decimal(-6, 0xCCCCCCCCCCCCCCCD)
+    Decimal('-5.1999999999999999999864474728691872883029282093048095703125')
+    >>> to_decimal(10, 1 << 63)
+    Decimal('10.5')
+    """
+    seconds, frac = check_pair(seconds, frac)
+    return _exact(seconds, frac)
 
 
 def from_decimal(value: ExactInput) -> tuple[int, int]:
     """Convert exact seconds since the 1904 epoch to a ``(seconds, frac)`` pair.
 
-    Accepts a :class:`~decimal.Decimal`, :class:`int` or :class:`str`. A
-    :class:`float` is refused so a lossy value cannot slip in; use
-    :func:`lvtime.from_float` for the float path.
+    Accepts a :class:`~decimal.Decimal`, :class:`int` or :class:`str` and rounds
+    once to the nearest 2**-64 s (ties to even). A :class:`float` is refused with
+    :class:`TypeError` so a lossy value cannot slip in (use :func:`from_float`);
+    text that is not a finite decimal number raises :class:`ValueError`.
+
+    >>> from_decimal("-5.2") == (-6, 0xCCCCCCCCCCCCCCCD)
+    True
     """
-    with localcontext(_CONTEXT):
-        total = _as_decimal(value)
-        seconds = int(total.to_integral_value(rounding=ROUND_FLOOR))
-        remainder = total - seconds
-        frac = int((remainder * _FRAC_UNIT).to_integral_value(rounding=ROUND_HALF_EVEN))
-    if frac == _FRAC_UNIT:
-        seconds += 1
-        frac = 0
-    check_seconds(seconds)
-    check_frac(frac)
-    return seconds, frac
+    return split_units(_units(value, 0))
 
 
-def to_unix_decimal(seconds: int, frac: int = 0) -> Decimal:
-    """Return exact Unix time (seconds since 1970-01-01 UTC) as a :class:`~decimal.Decimal`."""
-    with localcontext(_CONTEXT):
-        return to_decimal(seconds, frac) - LABVIEW_UNIX_EPOCH_OFFSET
+def to_unix_decimal(seconds: SupportsIndex, frac: SupportsIndex = 0) -> Decimal:
+    """Return exact Unix time (seconds since 1970-01-01 UTC) as a :class:`~decimal.Decimal`.
+
+    >>> to_unix_decimal(3810888000, 1 << 63)
+    Decimal('1728043200.5')
+    """
+    seconds, frac = check_pair(seconds, frac)
+    return _exact(seconds - LABVIEW_UNIX_EPOCH_OFFSET, frac)
 
 
 def from_unix_decimal(value: ExactInput) -> tuple[int, int]:
-    """Convert exact Unix time (seconds since 1970-01-01 UTC) to a ``(seconds, frac)`` pair."""
-    with localcontext(_CONTEXT):
-        return from_decimal(_as_decimal(value) + LABVIEW_UNIX_EPOCH_OFFSET)
+    """Convert exact Unix time (seconds since 1970-01-01 UTC) to a ``(seconds, frac)`` pair.
+
+    Rounds like :func:`from_decimal`; the epoch offset is added in integers.
+
+    >>> from_unix_decimal("1728043200.5")
+    (3810888000, 9223372036854775808)
+    """
+    return split_units(_units(value, LABVIEW_UNIX_EPOCH_OFFSET))

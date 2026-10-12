@@ -3,7 +3,7 @@
 LabVIEW absolute time counts from 1904-01-01 00:00:00 UTC. A value is a signed
 64-bit count of whole seconds plus an unsigned 64-bit fraction in units of
 2**-64 seconds. :mod:`datetime` resolves only to microseconds and a float holds
-about 52 bits of mantissa, so those two views round; the lossless path is the
+53 bits of mantissa, so those two views round; the lossless path is the
 integer pair itself.
 """
 
@@ -11,88 +11,122 @@ from __future__ import annotations
 
 import math
 from datetime import datetime, timedelta, timezone
+from typing import Final, SupportsIndex
 
-# Seconds between the LabVIEW epoch (1904-01-01) and the Unix epoch (1970-01-01).
-LABVIEW_UNIX_EPOCH_OFFSET = 2082844800
+from ._validate import as_int, check_pair, check_seconds, div_round_half_even
 
-I64_MIN = -(2**63)
-I64_MAX = 2**63 - 1
-U64_MAX = 2**64 - 1
+LABVIEW_UNIX_EPOCH_OFFSET: Final[int] = 2082844800
+"""Seconds from the LabVIEW epoch (1904-01-01 UTC) to the Unix epoch (1970-01-01 UTC)."""
 
 _EPOCH = datetime(1904, 1, 1, tzinfo=timezone.utc)
-_MICROS_PER_SECOND = 1_000_000
-_FRAC_UNIT = 1 << 64
-_HALF_FRAC_UNIT = 1 << 63
+_MICROS = 1_000_000
+_FRAC_BITS = 64
+_FRAC_UNIT = 1 << _FRAC_BITS
+_HALF_FRAC_UNIT = 1 << (_FRAC_BITS - 1)
 
 
-def check_seconds(seconds: int) -> None:
-    """Reject whole-second counts that do not fit a signed 64-bit integer."""
-    if not I64_MIN <= seconds <= I64_MAX:
-        raise ValueError(f"seconds must fit a signed 64-bit integer, got {seconds}")
-
-
-def check_frac(frac: int) -> None:
-    """Reject fractions outside the unsigned 64-bit range."""
-    if not 0 <= frac <= U64_MAX:
-        raise ValueError(f"frac must be in [0, 2**64), got {frac}")
-
-
-def to_datetime(seconds: int, frac: int = 0) -> datetime:
+def to_datetime(seconds: SupportsIndex, frac: SupportsIndex = 0) -> datetime:
     """Convert a LabVIEW timestamp to a UTC-aware :class:`datetime.datetime`.
 
-    ``seconds`` is whole seconds since 1904-01-01 UTC and ``frac`` the 2**-64 s
-    fraction. The fraction is rounded to the nearest microsecond. Raises
-    :class:`ValueError` if ``frac`` is out of range and :class:`OverflowError`
-    if the instant falls outside the range of :class:`datetime.datetime`.
+    The fraction is rounded to the nearest microsecond (an exact half rounds up,
+    towards the later instant). Raises :class:`OverflowError` if the instant is
+    outside the years 1 to 9999 that :class:`datetime.datetime` can hold.
+
+    >>> to_datetime(3810888000, 1 << 63)
+    datetime.datetime(2024, 10, 4, 12, 0, 0, 500000, tzinfo=datetime.timezone.utc)
     """
-    check_frac(frac)
-    micros = (frac * _MICROS_PER_SECOND + _HALF_FRAC_UNIT) >> 64
-    return _EPOCH + timedelta(microseconds=seconds * _MICROS_PER_SECOND + micros)
+    seconds, frac = check_pair(seconds, frac)
+    micros = (frac * _MICROS + _HALF_FRAC_UNIT) >> _FRAC_BITS
+    try:
+        return _EPOCH + timedelta(seconds=seconds, microseconds=micros)
+    except OverflowError:
+        message = "the instant is outside the datetime range (years 1 to 9999)"
+        raise OverflowError(message) from None
 
 
 def from_datetime(dt: datetime) -> tuple[int, int]:
     """Convert a timezone-aware :class:`datetime.datetime` to ``(seconds, frac)``.
 
-    The input must carry a timezone so the instant is unambiguous; a naive
-    datetime raises :class:`ValueError`. The microsecond field maps back to the
-    nearest 2**-64 s fraction, so a round trip is exact to the microsecond.
+    A naive datetime raises :class:`ValueError`, so the instant is never
+    ambiguous. The microsecond maps to the nearest 2**-64 s fraction, so
+    ``to_datetime(*from_datetime(dt)) == dt`` for every aware ``dt``.
+
+    >>> from datetime import datetime, timezone
+    >>> from_datetime(datetime(2024, 10, 4, 12, 0, 0, 500000, tzinfo=timezone.utc))
+    (3810888000, 9223372036854775808)
     """
+    if not isinstance(dt, datetime):
+        raise TypeError(f"dt must be a datetime, got {type(dt).__name__}")
     if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
-        raise ValueError("dt must be timezone-aware")
+        raise ValueError("dt must be timezone-aware (naive datetimes are ambiguous)")
     delta = dt - _EPOCH
-    total_micros = (delta.days * 86400 + delta.seconds) * _MICROS_PER_SECOND + delta.microseconds
-    seconds, micro_remainder = divmod(total_micros, _MICROS_PER_SECOND)
-    frac = (micro_remainder * _FRAC_UNIT + _MICROS_PER_SECOND // 2) // _MICROS_PER_SECOND
-    check_seconds(seconds)
-    return seconds, frac
+    total_micros = (delta.days * 86400 + delta.seconds) * _MICROS + delta.microseconds
+    seconds, micros = divmod(total_micros, _MICROS)
+    frac = (micros * _FRAC_UNIT + _MICROS // 2) // _MICROS
+    return check_seconds(seconds), frac
 
 
-def to_float(seconds: int, frac: int = 0) -> float:
-    """Return seconds since the 1904 epoch as a float (LabVIEW DBL coercion).
+def _ratio(value: float) -> tuple[int, int]:
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError(f"value must be a finite number, got {value!r}")
+        return value.as_integer_ratio()
+    if isinstance(value, bool) or not hasattr(type(value), "__index__"):
+        raise TypeError(f"value must be a float or an integer, got {type(value).__name__}")
+    return as_int("value", value), 1
 
-    This matches wiring a LabVIEW timestamp into a double. A float keeps only
-    about 52 bits of mantissa, so sub-microsecond detail is lost.
+
+def split_units(units: int) -> tuple[int, int]:
+    """Split a count of 2**-64 s units into a checked ``(seconds, frac)`` pair."""
+    seconds, frac = divmod(units, _FRAC_UNIT)
+    return check_seconds(seconds), frac
+
+
+def to_float(seconds: SupportsIndex, frac: SupportsIndex = 0) -> float:
+    """Return seconds since the 1904 epoch as the nearest float.
+
+    This is the value you get by converting a LabVIEW timestamp to a double. A
+    float keeps 53 significant bits, so detail below about half a microsecond is
+    lost at present-day magnitudes.
+
+    >>> to_float(3810888000, 1 << 63)
+    3810888000.5
     """
-    check_frac(frac)
-    return seconds + frac / _FRAC_UNIT
+    seconds, frac = check_pair(seconds, frac)
+    return (seconds * _FRAC_UNIT + frac) / _FRAC_UNIT
 
 
 def from_float(value: float) -> tuple[int, int]:
-    """Convert seconds since the 1904 epoch (as a float) to ``(seconds, frac)``."""
-    seconds = math.floor(value)
-    frac = round((value - seconds) * _FRAC_UNIT)
-    if frac >= _FRAC_UNIT:
-        seconds += 1
-        frac -= _FRAC_UNIT
-    check_seconds(seconds)
-    return seconds, frac
+    """Convert float seconds since the 1904 epoch to ``(seconds, frac)``.
+
+    The exact value of the float is rounded to the nearest 2**-64 s (ties to
+    even). NaN and infinities raise :class:`ValueError`.
+
+    >>> from_float(3810888000.5)
+    (3810888000, 9223372036854775808)
+    """
+    numerator, denominator = _ratio(value)
+    return split_units(div_round_half_even(numerator << _FRAC_BITS, denominator))
 
 
-def to_unix(seconds: int, frac: int = 0) -> float:
-    """Return Unix time (float seconds since 1970-01-01 UTC), like :func:`time.time`."""
-    return to_float(seconds, frac) - LABVIEW_UNIX_EPOCH_OFFSET
+def to_unix(seconds: SupportsIndex, frac: SupportsIndex = 0) -> float:
+    """Return Unix time (float seconds since 1970-01-01 UTC), like :func:`time.time`.
+
+    >>> to_unix(3810888000, 1 << 63)
+    1728043200.5
+    """
+    seconds, frac = check_pair(seconds, frac)
+    return ((seconds - LABVIEW_UNIX_EPOCH_OFFSET) * _FRAC_UNIT + frac) / _FRAC_UNIT
 
 
 def from_unix(value: float) -> tuple[int, int]:
-    """Convert Unix time (float seconds since 1970-01-01 UTC) to ``(seconds, frac)``."""
-    return from_float(value + LABVIEW_UNIX_EPOCH_OFFSET)
+    """Convert Unix time (float seconds since 1970-01-01 UTC) to ``(seconds, frac)``.
+
+    Exact like :func:`from_float`: the epoch offset is added in integers.
+
+    >>> from_unix(1728043200.5)
+    (3810888000, 9223372036854775808)
+    """
+    numerator, denominator = _ratio(value)
+    units = div_round_half_even(numerator << _FRAC_BITS, denominator)
+    return split_units(units + (LABVIEW_UNIX_EPOCH_OFFSET << _FRAC_BITS))
