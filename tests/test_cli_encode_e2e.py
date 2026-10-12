@@ -35,7 +35,6 @@ def test_encode_refuses_text_that_is_not_an_iso_datetime(text: str) -> None:
     ("text", "exact"),
     [
         ("2024-10-04T12:00:00.5+0200", "3810880800.5"),
-        ("2024-10-04T12:00:00.5-00:30:00.25", "3810889800.75"),
     ],
 )
 def test_encode_applies_the_offset_exactly(text: str, exact: str) -> None:
@@ -44,10 +43,40 @@ def test_encode_applies_the_offset_exactly(text: str, exact: str) -> None:
     assert result.stdout == lvtime.LVTimestamp.from_decimal(exact).hex() + "\n"
 
 
-def test_encode_never_takes_the_offset_fraction_for_the_time_fraction() -> None:
-    result = run_cli("encode", "2024-10-04T12:00:00+05:30:00.5")
-    expected = lvtime.LVTimestamp.from_decimal("3810868199.5").hex()
-    assert (result.returncode, result.stdout) == (0, expected + "\n")
+@pytest.mark.parametrize(
+    "text",
+    [
+        "2024-10-04T12:00:00+05:30:00.5",
+        "2024-10-04T12:00:00.5-00:30:00.25",
+        "2024-01-01T00:00:00+00:00:00.5",
+        "20241004T120000.5+053015",
+    ],
+)
+def test_encode_refuses_offsets_with_seconds(text: str) -> None:
+    result = run_cli("encode", text)
+    assert result.returncode == 1
+    assert result.stderr.startswith("lvtime: UTC offsets with seconds are not supported")
+
+
+@pytest.mark.parametrize("text", ["2024-01-01T00:00.5Z", "2024-01-01T00.5Z", "20240101T0000.5Z"])
+def test_encode_refuses_fractions_of_minutes_and_hours(text: str) -> None:
+    result = run_cli("encode", text)
+    assert result.returncode == 1
+    assert result.stderr.startswith("lvtime: a fraction must follow whole seconds")
+
+
+@pytest.mark.parametrize(
+    ("text", "exact"),
+    [
+        ("20241004T120000.123456789Z", "3810888000.123456789"),
+        ("20241004T140000.5+0200", "3810888000.5"),
+        ("2024-10-04T14:00:00.5+02", "3810888000.5"),
+    ],
+)
+def test_encode_takes_the_basic_form_and_short_offsets(text: str, exact: str) -> None:
+    result = run_cli("encode", text)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == lvtime.LVTimestamp.from_decimal(exact).hex() + "\n"
 
 
 def test_encode_errors_quote_what_the_user_typed() -> None:

@@ -28,7 +28,10 @@ MANIFEST = (
 )
 
 if not all((SOURCES / entry["file"]).is_file() for entry in MANIFEST["files"]):
-    pytest.skip("source copies not present (run scripts/fetch_sources.py)", allow_module_level=True)
+    pytest.skip(
+        "source copies not present (scripts/fetch_sources.py in the repository fetches them)",
+        allow_module_level=True,
+    )
 
 
 def _text(name: str) -> str:

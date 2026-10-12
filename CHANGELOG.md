@@ -39,8 +39,9 @@ in the guide, and the command-line options, output formats and exit codes.
   `decimal.Inexact`, and the caller's decimal flags are left untouched.
 - A result outside the 64-bit second range raises `ValueError` with one message for every
   conversion.
-- `to_datetime`, `to_float`, `to_unix`, `to_decimal` and `to_unix_decimal` check that
-  `seconds` fits a signed 64-bit integer. `to_datetime` raises `OverflowError` with its own
+- `to_datetime`, `to_float`, `to_unix`, `to_decimal` and `to_unix_decimal` raise `ValueError`
+  when `seconds` does not fit a signed 64-bit integer (0.3.0 returned a value, for example
+  `to_float(2**63, 0)`, or raised `OverflowError` from `to_datetime`). `to_datetime` raises `OverflowError` with its own
   short message outside the years 1 to 9999.
 - `from_datetime` raises `TypeError` for anything that is not a `datetime` (was
   `AttributeError`).
@@ -48,13 +49,14 @@ in the guide, and the command-line options, output formats and exit codes.
   `OverflowError`) and `TypeError` for non-numbers.
 - The byte readers accept `bytes`, `bytearray` and `memoryview` (any format) and raise
   `TypeError` for anything else; `write_timestamp` and `write_timestamps` raise `TypeError`
-  for items that are not `LVTimestamp`, and `write_timestamps` takes any iterable and checks
-  `byteorder` even when empty.
+  for items that are not `LVTimestamp`.
 - Error messages never repeat more than about 40 characters of the input.
 - CLI: `encode` keeps every fractional digit of the ISO text (0.3.0 cut it to the
   microsecond) and accepts fractions of any length on Python 3.10, whose `fromisoformat`
   only takes 3 or 6 digits (`lvtime encode 2024-10-04T12:00:00.5Z` failed there), plus
-  `+0200` style offsets there; offsets with fractional seconds are applied exactly.
+  `+0200` style offsets and the basic form `20241004T120000.5Z` there. It refuses UTC offsets
+  with seconds (Python reads `+00:00:00.5` as `+00:00`) and fractions of minutes or hours
+  (Python reads `12:00.5` as half a second).
 - CLI: a missing or unreadable stdin, a closed stderr and very long bad arguments no longer
   give a traceback, a wrong exit code or a huge message.
 - CLI: a timestamp outside the `datetime` range exits 1 with a message instead of a

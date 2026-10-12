@@ -60,13 +60,14 @@ def test_2002_row_is_really_2001_12_31_not_the_mislabelled_date() -> None:
 
 
 def test_the_exact_decimal_path_reproduces_the_ni_fraction_bytes() -> None:
-    # 0.8 s is exactly 0xCCCCCCCCCCCCCCCD in 2**-64 units; the Decimal path hits it.
+    # 0.8 s rounds to 0xCCCCCCCCCCCCCCCD in 2**-64 units (NI notes the rounding); the
+    # Decimal path hits it.
     assert from_decimal("-5.2") == (-6, 0xCCCCCCCCCCCCCCCD)
     assert from_decimal("-0.5") == (-1, 0x8000000000000000)
 
 
 def test_the_float_path_cannot_reach_the_ni_fraction_bytes() -> None:
-    # Documents the NI rounding caveat: a double collapses 0.8 to 0xCCCCCCCCCCCCC000.
+    # Documents the NI caveat: built from the double -5.2 the fraction is 0xCCCCCCCCCCCCC000.
     from lvtime import from_float
 
     assert from_float(-5.2) == (-6, 0xCCCCCCCCCCCCC000)

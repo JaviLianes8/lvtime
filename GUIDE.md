@@ -121,7 +121,8 @@ because it does not name an instant. The microsecond maps to the nearest 2**-64 
 ```
 
 `datetime` covers the years 1 to 9999. Outside them `to_datetime` raises `OverflowError`;
-the other views still work.
+the other views still work. A `seconds` field outside the signed 64-bit range raises
+`ValueError` in every function, as it does in `LVTimestamp`.
 
 ## Unix time and float seconds
 
@@ -169,8 +170,8 @@ Decimal('1728043200.5')
 ```
 
 Arithmetic on the returned `Decimal` follows your decimal context, which keeps 28 digits by
-default. A present-day instant needs up to 84, so raise the precision before adding or
-subtracting timestamps exactly:
+default. A present-day instant has up to 74 significant digits (83 at the 64-bit extremes),
+so raise the precision before adding or subtracting timestamps exactly:
 
 ```pycon
 >>> from decimal import Context, localcontext
@@ -219,10 +220,12 @@ The `lvtime` command (also `python -m lvtime`) has two subcommands:
   `json`), or the exact seconds since 1904 and since 1970 (`decimal`).
 - `lvtime encode [ISO] [--byteorder big|little]` turns an ISO 8601 datetime into 32 hex
   digits. A trailing `Z` means UTC, and a datetime without an offset is taken as UTC.
-  Fractional seconds of any length are kept (`12:00:00.123456789` is not cut to the
-  microsecond) and rounded once to the nearest 2**-64 s. Offsets may be written `+02:00` or
-  `+0200`; other forms are accepted as far as the running Python's
-  `datetime.fromisoformat` accepts them (3.11 and later take more than 3.10).
+  The basic form (`20241004T120000.5Z`) is accepted too. A fraction must follow whole
+  seconds: `12:00.5` (a fraction of a minute) is refused. Fractional seconds of any length
+  are kept (`12:00:00.123456789` is not cut to the
+  microsecond) and rounded once to the nearest 2**-64 s. Offsets are `Z`, `+02`, `+02:00` or `+0200`
+  (offsets with seconds are refused); other date and time forms (ISO week dates, for example) are accepted as far as the running
+  Python's `datetime.fromisoformat` accepts them (3.11 and later take more than 3.10).
 
 Without the positional argument both read standard input. Exit codes: 0 success, 1 bad input
 (a one-line message on stderr) or a closed output pipe, 2 bad usage, 130 when interrupted with
