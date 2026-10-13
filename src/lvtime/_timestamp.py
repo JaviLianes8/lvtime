@@ -5,12 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import SupportsIndex
+from typing import SupportsIndex, cast
 
 from . import _codec, _convert, _exact
 from ._codec import ByteOrder, BytesLike
 from ._exact import ExactInput
-from ._validate import check_pair
+from ._validate import check_pair, type_name
 
 
 @dataclass(frozen=True, order=True, init=False)
@@ -164,12 +164,12 @@ class LVTimestamp:
         LVTimestamp(seconds=3092601600, frac=0)
         """
         if not isinstance(text, str):
-            raise TypeError(f"text must be a str, got {type(text).__name__}")
+            raise TypeError(f"text must be a str, got {type_name(text)}")
         return cls.from_bytes(bytes.fromhex(text), byteorder)
 
 
 def require_timestamp(value: object) -> LVTimestamp:
     """Return ``value`` if it is an :class:`LVTimestamp`, else raise :class:`TypeError`."""
-    if not isinstance(value, LVTimestamp):
-        raise TypeError(f"expected an LVTimestamp, got {type(value).__name__}")
-    return value
+    if not issubclass(type(value), LVTimestamp):  # type() cannot be faked like __class__
+        raise TypeError(f"expected an LVTimestamp, got {type_name(value)}")
+    return cast(LVTimestamp, value)

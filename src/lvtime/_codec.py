@@ -14,7 +14,7 @@ from __future__ import annotations
 import struct
 from typing import Literal
 
-from ._validate import short
+from ._validate import check_pair, short, type_name
 
 ByteOrder = Literal["big", "little"]
 BytesLike = bytes | bytearray | memoryview
@@ -28,9 +28,9 @@ TIMESTAMP_SIZE = _BIG.size
 def _layout(byteorder: ByteOrder) -> tuple[struct.Struct, bool]:
     """Return the struct and whether its fields come fraction first."""
     if isinstance(byteorder, str):
-        if byteorder == "big":
+        if str.__eq__(byteorder, "big") is True:
             return _BIG, False
-        if byteorder == "little":
+        if str.__eq__(byteorder, "little") is True:
             return _LITTLE, True
     raise ValueError(f"byteorder must be 'big' or 'little', got {short(byteorder)}")
 
@@ -48,12 +48,13 @@ def as_bytes(data: BytesLike) -> bytes:
         # Copy the raw buffer: neither __bytes__ nor __len__ of a subclass is consulted.
         with memoryview(data) as view:
             return view.tobytes()
-    raise TypeError(f"data must be bytes, bytearray or memoryview, got {type(data).__name__}")
+    raise TypeError(f"data must be bytes, bytearray or memoryview, got {type_name(data)}")
 
 
 def pack(seconds: int, frac: int, byteorder: ByteOrder = "big") -> bytes:
     """Encode a validated ``(seconds, frac)`` pair as 16 bytes in the given byte order."""
     layout, frac_first = _layout(byteorder)
+    seconds, frac = check_pair(seconds, frac)  # cheap, and no subclass can sneak past it
     return layout.pack(frac, seconds) if frac_first else layout.pack(seconds, frac)
 
 

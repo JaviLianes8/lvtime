@@ -21,7 +21,7 @@ from decimal import (
 from typing import SupportsIndex
 
 from ._convert import LABVIEW_UNIX_EPOCH_OFFSET, OUT_OF_RANGE, split_units
-from ._validate import I64_MAX, I64_MIN, check_pair, div_round_half_even, short
+from ._validate import I64_MAX, I64_MIN, check_pair, div_round_half_even, short, type_name
 
 ExactInput = Decimal | int | str
 
@@ -69,7 +69,7 @@ def _as_decimal(value: ExactInput) -> Decimal:
             raise ValueError(f"not a decimal number: {short(value)}") from None
     else:
         hint = " (use from_float for a float)" if isinstance(value, float) else ""
-        raise TypeError(f"value must be a Decimal, int or str, got {type(value).__name__}{hint}")
+        raise TypeError(f"value must be a Decimal, int or str, got {type_name(value)}{hint}")
     if not number.is_finite():
         raise ValueError(f"value must be a finite number, got {short(value)}")
     return number

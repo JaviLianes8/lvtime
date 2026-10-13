@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from . import _codec
 from ._codec import ByteOrder, BytesLike
 from ._timestamp import LVTimestamp, require_timestamp
+from ._validate import type_name
 
 
 def read_timestamp(data: BytesLike, byteorder: ByteOrder = "big") -> LVTimestamp:
@@ -24,7 +25,7 @@ def write_timestamp(timestamp: LVTimestamp, byteorder: ByteOrder = "big") -> byt
     >>> write_timestamp(LVTimestamp(-1, 1 << 63)).hex()
     'ffffffffffffffff8000000000000000'
     """
-    return require_timestamp(timestamp).to_bytes(byteorder)
+    return LVTimestamp.to_bytes(require_timestamp(timestamp), byteorder)
 
 
 def read_timestamps(data: BytesLike, byteorder: ByteOrder = "big") -> list[LVTimestamp]:
@@ -47,7 +48,7 @@ def write_timestamps(timestamps: Iterable[LVTimestamp], byteorder: ByteOrder = "
     """
     if isinstance(timestamps, (LVTimestamp, bytes, bytearray, memoryview, str)):
         raise TypeError(
-            f"timestamps must be an iterable of LVTimestamp, not {type(timestamps).__name__}"
+            f"timestamps must be an iterable of LVTimestamp, not {type_name(timestamps)}"
         )
     _codec.check_byteorder(byteorder)
-    return b"".join(require_timestamp(ts).to_bytes(byteorder) for ts in timestamps)
+    return b"".join(LVTimestamp.to_bytes(require_timestamp(ts), byteorder) for ts in timestamps)

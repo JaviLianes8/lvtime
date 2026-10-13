@@ -77,3 +77,66 @@ def test_the_decimal_context_at_import_time_does_not_matter(setup: str) -> None:
 def test_the_cli_ignores_a_customised_default_context(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(decimal.DefaultContext, "Emax", 5)
     assert main(["encode", "2024-10-04T12:00:00.5Z"]) == 0
+
+
+class _UncheckedStamp(LVTimestamp):
+    def __init__(self) -> None:
+        pass
+
+    seconds = 2**100
+
+
+class _FakeClass:
+    @property  # type: ignore[misc]
+    def __class__(self) -> type:
+        return LVTimestamp
+
+
+class _LongNames(type):
+    @property
+    def __name__(cls) -> str:  # type: ignore[override]
+        return "N" * 1_000_000
+
+
+class _Oddly(metaclass=_LongNames):
+    pass
+
+
+class _AlwaysEqual(str):
+    def __eq__(self, other: object) -> bool:
+        return True
+
+    __hash__ = str.__hash__
+
+
+def test_a_subclass_that_skips_validation_cannot_be_written() -> None:
+    for call in (
+        lambda: lvtime.write_timestamp(_UncheckedStamp()),
+        lambda: lvtime.write_timestamps([_UncheckedStamp()]),
+        lambda: _UncheckedStamp().to_bytes(),
+        lambda: _UncheckedStamp().hex(),
+    ):
+        with pytest.raises(ValueError, match="seconds must fit"):
+            call()
+
+
+def test_an_object_faking_its_class_is_not_a_timestamp() -> None:
+    with pytest.raises(TypeError):
+        lvtime.write_timestamp(_FakeClass())  # type: ignore[arg-type]
+    with pytest.raises(TypeError):
+        lvtime.write_timestamps([_FakeClass()])  # type: ignore[list-item]
+
+
+def test_type_names_in_messages_are_real_and_bounded() -> None:
+    with pytest.raises(TypeError) as caught:
+        LVTimestamp(_Oddly())  # type: ignore[arg-type]
+    assert len(str(caught.value)) < 120
+    assert "_Oddly" in str(caught.value)
+
+
+def test_byteorder_is_compared_as_plain_text() -> None:
+    with pytest.raises(ValueError, match="byteorder"):
+        LVTimestamp(1).to_bytes(_AlwaysEqual("nonsense"))  # type: ignore[arg-type]
+    assert LVTimestamp(1, 2).to_bytes(_AlwaysEqual("little")) == LVTimestamp(1, 2).to_bytes(  # type: ignore[arg-type]
+        "little"
+    )

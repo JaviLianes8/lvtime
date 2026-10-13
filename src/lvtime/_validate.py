@@ -13,6 +13,15 @@ U64_MAX = 2**64 - 1
 _SHOW_LIMIT = 40
 
 
+_TYPE_NAME = type.__dict__["__name__"]
+
+
+def type_name(value: object) -> str:
+    """Return the real, bounded name of ``value``'s type, whatever a metaclass claims."""
+    name = str.__add__("", _TYPE_NAME.__get__(type(value)))
+    return name if len(name) <= _SHOW_LIMIT else name[:_SHOW_LIMIT] + "..."
+
+
 def short(value: object) -> str:
     """Return a bounded description of ``value`` for an error message."""
     if isinstance(value, int) and not isinstance(value, bool):
@@ -23,7 +32,7 @@ def short(value: object) -> str:
     try:
         text = str.__add__("", repr(value))  # a plain str, whatever repr returned
     except Exception:
-        return f"a {type(value).__name__} object"
+        return f"a {type_name(value)} object"
     if len(text) > _SHOW_LIMIT:
         return f"{text[:_SHOW_LIMIT]}... ({len(text)} characters)"
     return text
@@ -36,7 +45,7 @@ def as_int(name: str, value: SupportsIndex) -> int:
     try:
         return operator.index(value)
     except TypeError:
-        raise TypeError(f"{name} must be an integer, got {type(value).__name__}") from None
+        raise TypeError(f"{name} must be an integer, got {type_name(value)}") from None
 
 
 def check_seconds(seconds: SupportsIndex) -> int:

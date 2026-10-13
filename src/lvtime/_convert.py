@@ -13,7 +13,15 @@ import math
 from datetime import datetime, timedelta, timezone
 from typing import Final, SupportsIndex
 
-from ._validate import I64_MAX, I64_MIN, as_int, check_pair, check_seconds, div_round_half_even
+from ._validate import (
+    I64_MAX,
+    I64_MIN,
+    as_int,
+    check_pair,
+    check_seconds,
+    div_round_half_even,
+    type_name,
+)
 
 OUT_OF_RANGE = (
     "the value is outside the timestamp range (whole seconds must fit a signed 64-bit integer)"
@@ -60,7 +68,7 @@ def from_datetime(dt: datetime) -> tuple[int, int]:
     (3810888000, 9223372036854775808)
     """
     if not isinstance(dt, datetime):
-        raise TypeError(f"dt must be a datetime, got {type(dt).__name__}")
+        raise TypeError(f"dt must be a datetime, got {type_name(dt)}")
     if datetime.utcoffset(dt) is None:  # the plain method, whatever a subclass overrides
         raise ValueError("dt must be timezone-aware (naive datetimes are ambiguous)")
     delta = datetime.__sub__(dt, _EPOCH)  # the plain operation, whatever a subclass overrides
@@ -77,7 +85,7 @@ def _ratio(value: float) -> tuple[int, int]:
             raise ValueError(f"value must be a finite number, got {number!r}")
         return number.as_integer_ratio()
     if not hasattr(type(value), "__index__"):
-        raise TypeError(f"value must be a float or an integer, got {type(value).__name__}")
+        raise TypeError(f"value must be a float or an integer, got {type_name(value)}")
     return as_int("value", value), 1
 
 
