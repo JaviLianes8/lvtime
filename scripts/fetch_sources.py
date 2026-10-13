@@ -48,7 +48,7 @@ def main() -> None:
         )
     manifest = {"note": "public references fetched for the ground-truth tests", "files": entries}
     text = json.dumps(manifest, indent=2) + "\n"
-    (FOLDER / "MANIFEST.json").write_text(text, encoding="utf-8")
+    (FOLDER / "MANIFEST.json").write_text(text, encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

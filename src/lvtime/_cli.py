@@ -25,7 +25,7 @@ examples:
   lvtime encode 2024-10-04T12:00:00.5+00:00
   lvtime encode --byteorder little 2024-10-04T12:00:00Z
 
-exit codes: 0 success, 1 bad input, 2 bad usage
+exit codes: 0 success, 1 bad input or closed output, 2 bad usage, 130 interrupted
 """
 
 

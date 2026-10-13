@@ -102,3 +102,9 @@ def test_encode_takes_the_basic_form_and_short_offsets(text: str, exact: str) ->
 def test_encode_errors_quote_what_the_user_typed() -> None:
     result = run_cli("encode", "2024-10-04T12:00:00.5+02:00x")
     assert result.stderr == "lvtime: not an ISO 8601 datetime: '2024-10-04T12:00:00.5+02:00x'\n"
+
+
+def test_encode_ignores_surrounding_whitespace() -> None:
+    expected = "00000000e32589400000000000000000\n"
+    assert run_cli("encode", "  2024-10-04T12:00:00Z  ").stdout == expected
+    assert run_cli("encode", stdin="  2024-10-04T12:00:00Z  \n").stdout == expected

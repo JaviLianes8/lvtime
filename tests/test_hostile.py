@@ -72,3 +72,10 @@ def test_aware_datetimes_in_any_zone_give_the_same_instant() -> None:
     utc = datetime(2024, 10, 4, 12, tzinfo=timezone.utc)
     shifted = utc.astimezone(timezone(timedelta(hours=-7, minutes=-30)))
     assert lvtime.from_datetime(shifted) == lvtime.from_datetime(utc)
+
+
+def test_a_value_is_shown_whole_up_to_the_limit_and_cut_after_it() -> None:
+    from lvtime._validate import short
+
+    assert short("x" * 38) == repr("x" * 38)  # 40 characters with the quotes
+    assert short("x" * 39).endswith("... (41 characters)")

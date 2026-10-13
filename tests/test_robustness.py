@@ -171,7 +171,7 @@ def test_an_int_subclass_cannot_skip_the_size_check() -> None:
     assert time.perf_counter() - start < 2
 
 
-@pytest.mark.parametrize("bad", [b"", bytearray(16), memoryview(b"x"), "abc"])
+@pytest.mark.parametrize("bad", [b"", bytearray(16), memoryview(b"x"), "abc", ""])
 def test_write_timestamps_refuses_buffers_and_text(bad: object) -> None:
     with pytest.raises(TypeError):
         lvtime.write_timestamps(bad)  # type: ignore[arg-type]

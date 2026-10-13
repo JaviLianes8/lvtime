@@ -77,7 +77,8 @@ $ lvtime encode --byteorder little 2024-10-04T12:00:00.5Z
 0000000000000080408925e300000000
 ```
 
-Input can also come on stdin. Exit codes: 0 success, 1 bad input, 2 bad usage. See the
+Input can also come on stdin. Exit codes: 0 success, 1 bad input or closed output, 2 bad
+usage, 130 interrupted. See the
 [Guide](https://github.com/JaviLianes8/lvtime/blob/main/GUIDE.md#command-line).
 
 ## Why

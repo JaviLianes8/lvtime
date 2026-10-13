@@ -135,7 +135,9 @@ def test_help_names_the_program_and_lists_the_exit_codes() -> None:
     result = run_cli("--help")
     assert result.returncode == 0
     assert result.stdout.startswith("usage: lvtime ")
-    assert "exit codes: 0 success, 1 bad input, 2 bad usage" in result.stdout
+    assert "exit codes: 0 success, 1 bad input or closed output, 2 bad usage, 130 interrupted" in (
+        result.stdout
+    )
 
 
 def test_a_closed_stdout_pipe_exits_quietly() -> None:

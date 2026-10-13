@@ -134,7 +134,9 @@ def test_exact_range_edges() -> None:
         lvtime.from_decimal(f"-{2**63}.0000000000000000001")
 
 
-@pytest.mark.parametrize("bad", ["middle", "BIG", "", None, ["big"], b"big"])
+@pytest.mark.parametrize(
+    "bad", ["middle", "BIG", "LITTLE", "Little", " big", "little ", "", None, ["big"], b"big"]
+)
 def test_byte_order_must_be_big_or_little(bad: object) -> None:
     calls: list[Callable[[], object]] = [
         lambda: LVTimestamp(0).to_bytes(bad),  # type: ignore[arg-type]

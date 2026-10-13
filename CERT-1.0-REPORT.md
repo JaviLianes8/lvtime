@@ -139,7 +139,7 @@ new contract, 1 equivalent (the redundant code was removed).
 
 ## Independent QA lenses (item 19), first round at 8d11c9a
 
-Every lens was an independent reviewer that read the factory rules and CERT-1.0.md first,
+Every lens was an independent reviewer that read the certification rules and CERT-1.0.md first,
 worked in its own fresh clone, ran things rather than reading, and reported back privately.
 
 | Lens | First verdict | Findings | Fixed in |
