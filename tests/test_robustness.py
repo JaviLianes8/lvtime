@@ -6,7 +6,9 @@ import decimal
 import io
 import subprocess
 import sys
+from datetime import datetime, timezone
 from decimal import Decimal
+from typing import Any
 
 import pytest
 from _cli_command import cli_command, cli_env, run_cli
@@ -104,3 +106,32 @@ def test_usage_errors_do_not_echo_huge_arguments() -> None:
 def test_non_ascii_digits_are_not_a_fraction() -> None:
     result = run_cli("encode", "2024-10-04T12:00:00." + chr(0x661) + "Z")
     assert result.returncode == 1
+
+
+class _LoudInt(int):
+    def __repr__(self) -> str:
+        return "I" * 300_000
+
+
+class _OtherFloat(float):
+    def __float__(self) -> float:
+        return 99.0
+
+
+def test_integer_subclasses_cannot_blow_up_messages() -> None:
+    with pytest.raises(ValueError) as caught:
+        lvtime.read_timestamp(bytes(16), _LoudInt(5))  # type: ignore[arg-type]
+    assert len(str(caught.value)) < 120
+
+
+def test_a_float_subclass_cannot_change_its_value() -> None:
+    assert lvtime.from_float(_OtherFloat(1.5)) == (1, 1 << 63)
+
+
+def test_a_datetime_subclass_cannot_change_the_subtraction() -> None:
+    class Odd(datetime):
+        def __sub__(self, other: object) -> Any:
+            return 42
+
+    instant = Odd(2024, 10, 4, 12, tzinfo=timezone.utc)
+    assert lvtime.from_datetime(instant) == (3810888000, 0)

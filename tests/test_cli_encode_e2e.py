@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import pytest
 from _cli_command import run_cli
 
@@ -50,19 +52,33 @@ def test_encode_applies_the_offset_exactly(text: str, exact: str) -> None:
         "2024-10-04T12:00:00.5-00:30:00.25",
         "2024-01-01T00:00:00+00:00:00.5",
         "20241004T120000.5+053015",
+        "2024-01-01T00:00.5Z",
+        "2024-01-01T00.5Z",
+        "20240101T0000.5Z",
+        "2024-10-04t12:00:00.123456789Z",
+        "2024-10-04x12:00:00.5",
+        "2024-W40-5T12:00:00.5Z",
+        "2024100411200001234567",
+        "2024-1004T12:00:00.5Z",
+        "2024-10-04T1200:00.5Z",
+        "2024-10-04T120000.5Z",
+        "2024-10-04T24:00:00.5Z",
+        "2024-10-04T12:00:00.5+24:00",
+        "2024-10-04T12:00:00.5+05:60",
+        "0000-01-01T00:00:00Z",
     ],
 )
-def test_encode_refuses_offsets_with_seconds(text: str) -> None:
+def test_encode_refuses_everything_outside_its_grammar(text: str) -> None:
     result = run_cli("encode", text)
     assert result.returncode == 1
-    assert result.stderr.startswith("lvtime: UTC offsets with seconds are not supported")
+    assert result.stderr.startswith("lvtime: not an ISO 8601 datetime")
 
 
-@pytest.mark.parametrize("text", ["2024-01-01T00:00.5Z", "2024-01-01T00.5Z", "20240101T0000.5Z"])
-def test_encode_refuses_fractions_of_minutes_and_hours(text: str) -> None:
-    result = run_cli("encode", text)
+def test_encode_stays_linear_on_a_long_fraction_with_junk_after_it() -> None:
+    start = time.perf_counter()
+    result = run_cli("encode", stdin="2024-10-04T12:00:00." + "1" * 200_000 + "\nx")
     assert result.returncode == 1
-    assert result.stderr.startswith("lvtime: a fraction must follow whole seconds")
+    assert time.perf_counter() - start < 10
 
 
 @pytest.mark.parametrize(

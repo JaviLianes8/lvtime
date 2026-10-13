@@ -63,7 +63,7 @@ def from_datetime(dt: datetime) -> tuple[int, int]:
         raise TypeError(f"dt must be a datetime, got {type(dt).__name__}")
     if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
         raise ValueError("dt must be timezone-aware (naive datetimes are ambiguous)")
-    delta = dt - _EPOCH
+    delta = datetime.__sub__(dt, _EPOCH)  # the plain operation, whatever a subclass overrides
     total_micros = (delta.days * 86400 + delta.seconds) * _MICROS + delta.microseconds
     seconds, micros = divmod(total_micros, _MICROS)
     frac = (micros * _FRAC_UNIT + _MICROS // 2) // _MICROS
@@ -72,7 +72,7 @@ def from_datetime(dt: datetime) -> tuple[int, int]:
 
 def _ratio(value: float) -> tuple[int, int]:
     if isinstance(value, float):
-        number = float(value)  # drops any subclass behaviour
+        number = float.__float__(value)  # the plain value, whatever a subclass overrides
         if not math.isfinite(number):
             raise ValueError(f"value must be a finite number, got {number!r}")
         return number.as_integer_ratio()

@@ -16,9 +16,10 @@ _SHOW_LIMIT = 40
 def short(value: object) -> str:
     """Return a bounded description of ``value`` for an error message."""
     if isinstance(value, int) and not isinstance(value, bool):
-        if value.bit_length() > 64:
-            return f"an integer of {value.bit_length()} bits"
-        return str(value)
+        number = int.__index__(value)  # the plain value, whatever a subclass overrides
+        if number.bit_length() > 64:
+            return f"an integer of {number.bit_length()} bits"
+        return str(number)
     try:
         text = repr(value)
     except Exception:

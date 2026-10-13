@@ -219,13 +219,13 @@ The `lvtime` command (also `python -m lvtime`) has two subcommands:
   hex digits (spaces allowed) into an ISO 8601 instant, the pair and Unix time (`fields`,
   `json`), or the exact seconds since 1904 and since 1970 (`decimal`).
 - `lvtime encode [ISO] [--byteorder big|little]` turns an ISO 8601 datetime into 32 hex
-  digits. A trailing `Z` means UTC, and a datetime without an offset is taken as UTC.
-  The basic form (`20241004T120000.5Z`) is accepted too. A fraction must follow whole
-  seconds: `12:00.5` (a fraction of a minute) is refused. Fractional seconds of any length
-  are kept (`12:00:00.123456789` is not cut to the
-  microsecond) and rounded once to the nearest 2**-64 s. Offsets are `Z`, `+02`, `+02:00` or `+0200`
-  (offsets with seconds are refused); other date and time forms (ISO week dates, for example) are accepted as far as the running
-  Python's `datetime.fromisoformat` accepts them (3.11 and later take more than 3.10).
+  digits. It reads one strict grammar, the same on every Python version:
+  `YYYY-MM-DD[Thh:mm[:ss[.fraction]][offset]]`, or the basic form
+  `YYYYMMDD[Thhmm[ss[.fraction]][offset]]`, with `T` or a space between date and time and
+  `.` or `,` before the fraction. The offset is `Z`, `+hh`, `+hh:mm` or `+hhmm` (or `-`);
+  without one the time is UTC. The fraction may have any number of digits; it is kept and
+  rounded once to the nearest 2**-64 s. Anything else (week dates, fractions of minutes,
+  offsets with seconds, hour 24) is refused.
 
 Without the positional argument both read standard input. Exit codes: 0 success, 1 bad input
 (a one-line message on stderr) or a closed output pipe, 2 bad usage, 130 when interrupted with

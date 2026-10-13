@@ -6,16 +6,13 @@ import argparse
 import contextlib
 import json
 import os
-import re
 import sys
-from datetime import datetime, timezone
-from decimal import Context, Decimal, localcontext
 from typing import NoReturn, TextIO
 
 from . import __version__
 from ._codec import ByteOrder
 from ._io import read_timestamp, write_timestamp
-from ._timestamp import LVTimestamp
+from ._iso import parse_iso
 from ._validate import short
 
 _DESCRIPTION = "Decode and encode LabVIEW 128-bit timestamps (1904 epoch)."
@@ -47,54 +44,6 @@ def _read_arg(value: str | None) -> str:
     return text
 
 
-# A date and a time of day with a fraction of any length; the rest is the UTC offset.
-_ISO_FRACTION = re.compile(
-    r"(?P<y>\d{4})-?(?P<mo>\d{2})-?(?P<d>\d{2})[T ](?P<h>\d{2}):?(?P<mi>\d{2}):?(?P<s>\d{2})"
-    r"[.,](?P<frac>\d+)(?P<tail>.*)",
-    re.ASCII,
-)
-# A fraction of an hour or a minute, which fromisoformat would read as seconds.
-_PARTIAL_FRACTION = re.compile(r"[T ]\d{2}(?::?\d{2})?[.,]\d", re.ASCII)
-# A UTC offset that carries seconds, such as +05:30:15 or +00:00:00.5.
-_SECONDS_OFFSET = re.compile(r"[+-]\d{2}:?\d{2}:?\d{2}(?:[.,]\d+)?$", re.ASCII)
-# A basic-format offset such as +0200, which fromisoformat on Python 3.10 refuses.
-_BASIC_OFFSET = re.compile(
-    r"(?P<head>.*\d)(?P<sign>[+-])(?P<hours>\d{2})(?P<minutes>\d{2})", re.ASCII
-)
-
-
-def _parse_iso(text: str, shown: str) -> datetime:
-    if text[-1:] in ("Z", "z"):
-        text = text[:-1] + "+00:00"
-    basic = _BASIC_OFFSET.fullmatch(text)
-    if basic is not None and ":" in basic["head"]:
-        text = f"{basic['head']}{basic['sign']}{basic['hours']}:{basic['minutes']}"
-    try:
-        dt = datetime.fromisoformat(text)
-    except ValueError:
-        raise ValueError(f"not an ISO 8601 datetime: {short(shown)}") from None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt
-
-
-def _parse_iso_exact(text: str) -> LVTimestamp:
-    """Parse ISO 8601 text, keeping every fractional digit (datetime stops at 6)."""
-    if _SECONDS_OFFSET.search(text):
-        # fromisoformat drops some of these (+00:00:00.5 reads as +00:00), so refuse them all.
-        raise ValueError(f"UTC offsets with seconds are not supported: {short(text)}")
-    match = _ISO_FRACTION.fullmatch(text)
-    if match is None:
-        if _PARTIAL_FRACTION.search(text):
-            raise ValueError(f"a fraction must follow whole seconds: {short(text)}")
-        return LVTimestamp.from_datetime(_parse_iso(text, text))
-    head = "{y}-{mo}-{d}T{h}:{mi}:{s}".format(**match.groupdict())
-    whole = LVTimestamp.from_datetime(_parse_iso(head + match["tail"], text))
-    digits = match["frac"]
-    with localcontext(Context(prec=len(digits) + 100)):
-        return LVTimestamp.from_decimal(whole.to_decimal() + Decimal("0." + digits))
-
-
 def _decode(hex_text: str, byteorder: ByteOrder, fmt: str) -> str:
     try:
         raw = bytes.fromhex(hex_text)
@@ -118,7 +67,7 @@ def _decode(hex_text: str, byteorder: ByteOrder, fmt: str) -> str:
 
 
 def _encode(iso_text: str, byteorder: ByteOrder) -> str:
-    return write_timestamp(_parse_iso_exact(iso_text), byteorder).hex()
+    return write_timestamp(parse_iso(iso_text), byteorder).hex()
 
 
 class _Parser(argparse.ArgumentParser):
