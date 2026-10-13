@@ -10,3 +10,8 @@ dist/
 .ruff_cache/
 .coverage
 htmlcov/
+
+# Vendor and upstream references fetched for the ground-truth tests: kept on the
+# maintainer's machine only. Re-create them with scripts/fetch_sources.py.
+tests/fixtures/sources/*
+!tests/fixtures/sources/MANIFEST.json

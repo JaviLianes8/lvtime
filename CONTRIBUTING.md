@@ -16,4 +16,12 @@ pip install -r requirements-dev.txt
 - Run `scripts/check.ps1` (format, lint, types, tests) and make sure it passes.
 - One logical change per commit, imperative subject line.
 
+## Ground-truth references
+
+`tests/test_sources_truth.py` re-reads facts (byte values, field order, the epoch) from NI's
+timestamp and TDMS pages and from npTDMS. Those copies are not in the repository; fetch them
+with `python scripts/fetch_sources.py`, which also rewrites
+`tests/fixtures/sources/MANIFEST.json` (URL, date, size, SHA-256). Without them the module
+skips. With npTDMS installed, one more test cross-checks its reader.
+
 Open an issue first if the change is large or shifts the public API.

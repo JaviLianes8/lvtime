@@ -1,0 +1,177 @@
+{
+ "generated_by": "LabVIEW 2026 Community 26.3.1f1 (Windows x64), driven through its ActiveX server (VI Server over COM)",
+ "captured": "2026-10-12, 22:03 to 22:13 UTC",
+ "note": "Every file is LabVIEW's own output, copied unchanged. Timestamps set through COM carry millisecond precision; the TDMS instants are clock readings.",
+ "files": [
+  {
+   "file": "tdms_write_events.tdms",
+   "size": 113892,
+   "sha256": "a3bd36bbc32ebbf919f801f5d25fd50d856e370ea696e25517e01fe9993073b5",
+   "how": "TDMS file written by the shipped example 'examples/File IO/TDMS/Standard Read and Write/TDMS Write Events Data.vi', run headless through LabVIEW's ActiveX server and stopped after 6 s; little-endian segments (no big-endian ToC flag)"
+  },
+  {
+   "file": "tdms_write_events.datalog",
+   "size": 9405,
+   "sha256": "51c6f8f3b46bd9beb80301633f0c7ca9dc0eca01d3336d4b5c62f8e902becb87",
+   "how": "front-panel datalog (LogAtFinish) of the same run of 'TDMS Write Events Data.vi'; its 'Measured Data' waveforms carry the same start times as the TDMS file, big-endian"
+  },
+  {
+   "file": "timestamp_to_double.datalog",
+   "size": 802,
+   "sha256": "3c418727c0dcabf4fb5779b4e886955516f381d5e97bea5a3e3fd580078e2111",
+   "how": "front-panel datalog of vi.lib 'WDTConversion.llb/WDT TimeStamp-Numeric To Double-Numeric DBL.vi' with its timestamp input set through COM to 2026-10-13 00:05:46.797 local time (UTC+2)"
+  },
+  {
+   "file": "timestamp_add.datalog",
+   "size": 146,
+   "sha256": "994b5ca72b9644ded0aedbf787f8de05712ddcd0c7ac1639a872ead3c80f5537",
+   "how": "front-panel datalog of vi.lib 'Waveform/TSOps.llb/Timestamp Add.vi', x as above, y = 0.25 s after the epoch"
+  },
+  {
+   "file": "timestamp_subtract.datalog",
+   "size": 146,
+   "sha256": "3293530dcd99fd12ac3c47b8300b7d30a0fa5e6391f4972f6e761ef39e27d021",
+   "how": "front-panel datalog of vi.lib 'Waveform/TSOps.llb/Timestamp Subtract.vi', x as above, y = 0.25 s after the epoch"
+  },
+  {
+   "file": "timestamp_add_2026_plus_0p1.datalog",
+   "size": 146,
+   "sha256": "d3b0717705321a9287dda43cbe2f1ffb5fc3ff93259de9093654d6cfd9c693a4",
+   "how": "'Timestamp Add.vi' with x = 2026-07-01 12:00:00.123 local time (UTC+2) and y = 0.1 s after the epoch"
+  },
+  {
+   "file": "timestamp_add_1900.datalog",
+   "size": 146,
+   "sha256": "1371155d0c2145d18b24abaa620fb1b31cb33e3ed0f165be67c3e38fa5056dd4",
+   "how": "'Timestamp Add.vi' with x = 1900-01-01 00:00:00 local time (UTC+1), a negative second count"
+  }
+ ],
+ "records": [
+  {
+   "file": "tdms_write_events.tdms",
+   "offset": 407,
+   "byteorder": "little",
+   "hex": "0000000000287b4c3a0af3e600000000",
+   "what": "NI_ExpStartTimeStamp property of 'Amplitude sweep' (type code 0x44 at offset 403)"
+  },
+  {
+   "file": "tdms_write_events.tdms",
+   "offset": 838,
+   "byteorder": "little",
+   "hex": "00000000006028cc3a0af3e600000000",
+   "what": "NI_ExpStartTimeStamp property of 'Phase sweep' (type code 0x44 at offset 834)"
+  },
+  {
+   "file": "tdms_write_events.tdms",
+   "offset": 877,
+   "byteorder": "little",
+   "hex": "00000000006028cc3a0af3e600000000",
+   "what": "NI_ExpTimeStamp property of 'Phase sweep' (type code 0x44 at offset 873)"
+  },
+  {
+   "file": "tdms_write_events.tdms",
+   "offset": 9071,
+   "byteorder": "little",
+   "hex": "00000000006028cc3a0af3e600000000",
+   "what": "first value of the 'Events'/'Time' timestamp channel"
+  },
+  {
+   "file": "tdms_write_events.datalog",
+   "offset": 4890,
+   "byteorder": "big",
+   "hex": "00000000e6f30a3a4c7b280000000000",
+   "what": "NI_ExpStartTimeStamp attribute of waveform 1, the instant at TDMS offset 407"
+  },
+  {
+   "file": "tdms_write_events.datalog",
+   "offset": 9242,
+   "byteorder": "big",
+   "hex": "00000000e6f30a3acc28600000000000",
+   "what": "NI_ExpStartTimeStamp attribute of waveform 2, the instant at TDMS offset 838"
+  },
+  {
+   "file": "timestamp_to_double.datalog",
+   "offset": 754,
+   "byteorder": "big",
+   "hex": "00000000e6f30a3acc083126e978d800",
+   "what": "timestamp input x"
+  },
+  {
+   "file": "timestamp_to_double.datalog",
+   "offset": 718,
+   "byteorder": "big",
+   "hex": "41ecde6147598106",
+   "what": "DBL output: LabVIEW's double for x (3874687546.797)"
+  },
+  {
+   "file": "timestamp_add.datalog",
+   "offset": 114,
+   "byteorder": "big",
+   "hex": "00000000e6f30a3acc083126e978d800",
+   "what": "x"
+  },
+  {
+   "file": "timestamp_add.datalog",
+   "offset": 130,
+   "byteorder": "big",
+   "hex": "00000000000000004000000000000000",
+   "what": "y"
+  },
+  {
+   "file": "timestamp_add.datalog",
+   "offset": 98,
+   "byteorder": "big",
+   "hex": "00000000e6f30a3b0c083126e978d800",
+   "what": "x + y"
+  },
+  {
+   "file": "timestamp_subtract.datalog",
+   "offset": 98,
+   "byteorder": "big",
+   "hex": "00000000e6f30a3acc083126e978d800",
+   "what": "x"
+  },
+  {
+   "file": "timestamp_subtract.datalog",
+   "offset": 114,
+   "byteorder": "big",
+   "hex": "00000000000000004000000000000000",
+   "what": "y"
+  },
+  {
+   "file": "timestamp_subtract.datalog",
+   "offset": 130,
+   "byteorder": "big",
+   "hex": "00000000e6f30a3a8c083126e978d800",
+   "what": "x - y"
+  },
+  {
+   "file": "timestamp_add_2026_plus_0p1.datalog",
+   "offset": 114,
+   "byteorder": "big",
+   "hex": "00000000e66a95a01f7ced916872b000",
+   "what": "x"
+  },
+  {
+   "file": "timestamp_add_2026_plus_0p1.datalog",
+   "offset": 130,
+   "byteorder": "big",
+   "hex": "00000000000000001999999999999a00",
+   "what": "y"
+  },
+  {
+   "file": "timestamp_add_2026_plus_0p1.datalog",
+   "offset": 98,
+   "byteorder": "big",
+   "hex": "00000000e66a95a03916872b020c4a00",
+   "what": "x + y"
+  },
+  {
+   "file": "timestamp_add_1900.datalog",
+   "offset": 114,
+   "byteorder": "big",
+   "hex": "fffffffff87b23f00000000000000000",
+   "what": "x"
+  }
+ ]
+}
