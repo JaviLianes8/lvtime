@@ -42,10 +42,10 @@ def check_byteorder(byteorder: ByteOrder) -> None:
 
 def as_bytes(data: BytesLike) -> bytes:
     """Return ``data`` as bytes; refuse anything that is not a bytes-like buffer."""
-    if isinstance(data, bytes):
+    if type(data) is bytes:
         return data
-    if isinstance(data, (bytearray, memoryview)):
-        return bytes(data)
+    if isinstance(data, (bytes, bytearray, memoryview)):
+        return bytes(data)  # a plain copy, whatever a subclass claims about itself
     raise TypeError(f"data must be bytes, bytearray or memoryview, got {type(data).__name__}")
 
 

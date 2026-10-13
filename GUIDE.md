@@ -222,7 +222,7 @@ The `lvtime` command (also `python -m lvtime`) has two subcommands:
   digits. It reads one strict grammar, the same on every Python version:
   `YYYY-MM-DD[Thh:mm[:ss[.fraction]][offset]]`, or the basic form
   `YYYYMMDD[Thhmm[ss[.fraction]][offset]]`, with `T` or a space between date and time and
-  `.` or `,` before the fraction. The offset is `Z`, `+hh`, `+hh:mm` or `+hhmm` (or `-`);
+  `.` or `,` before the fraction. The offset is `Z` (or `z`), `+hh`, `+hh:mm` or `+hhmm` (or `-`);
   without one the time is UTC. The fraction may have any number of digits; it is kept and
   rounded once to the nearest 2**-64 s. Anything else (week dates, fractions of minutes,
   offsets with seconds, hour 24) is refused.

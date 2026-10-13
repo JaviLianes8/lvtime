@@ -51,7 +51,7 @@ def _as_decimal(value: ExactInput) -> Decimal:
     if isinstance(value, Decimal):
         number = Decimal(value)  # drops any subclass behaviour
     elif isinstance(value, int):
-        if value.bit_length() > 2 * _FRAC_BITS:
+        if int.bit_length(value) > 2 * _FRAC_BITS:
             raise ValueError(OUT_OF_RANGE)
         number = Decimal(value)
     elif isinstance(value, str):

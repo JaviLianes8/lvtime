@@ -6,6 +6,7 @@ import decimal
 import io
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -135,3 +136,42 @@ def test_a_datetime_subclass_cannot_change_the_subtraction() -> None:
 
     instant = Odd(2024, 10, 4, 12, tzinfo=timezone.utc)
     assert lvtime.from_datetime(instant) == (3810888000, 0)
+
+
+def test_a_datetime_subclass_cannot_fake_its_zone() -> None:
+    class Odd(datetime):
+        @property
+        def tzinfo(self) -> Any:
+            return object()
+
+    assert lvtime.from_datetime(Odd(2024, 10, 4, 12, tzinfo=timezone.utc)) == (3810888000, 0)
+
+
+class _LyingBytes(bytes):
+    def __len__(self) -> int:
+        return 16
+
+
+def test_a_bytes_subclass_cannot_lie_about_its_length() -> None:
+    with pytest.raises(ValueError, match="got 32"):
+        lvtime.read_timestamp(_LyingBytes(bytes(32)))
+    with pytest.raises(ValueError, match="got 40"):
+        lvtime.read_timestamps(_LyingBytes(bytes(40)))
+
+
+class _HugeInt(int):
+    def bit_length(self) -> int:
+        return 0
+
+
+def test_an_int_subclass_cannot_skip_the_size_check() -> None:
+    start = time.perf_counter()
+    with pytest.raises(ValueError):
+        lvtime.from_decimal(_HugeInt(1 << 4_000_000))
+    assert time.perf_counter() - start < 2
+
+
+@pytest.mark.parametrize("bad", [b"", bytearray(16), memoryview(b"x"), "abc"])
+def test_write_timestamps_refuses_buffers_and_text(bad: object) -> None:
+    with pytest.raises(TypeError):
+        lvtime.write_timestamps(bad)  # type: ignore[arg-type]

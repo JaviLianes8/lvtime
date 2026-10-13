@@ -61,7 +61,7 @@ def from_datetime(dt: datetime) -> tuple[int, int]:
     """
     if not isinstance(dt, datetime):
         raise TypeError(f"dt must be a datetime, got {type(dt).__name__}")
-    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+    if datetime.utcoffset(dt) is None:  # the plain method, whatever a subclass overrides
         raise ValueError("dt must be timezone-aware (naive datetimes are ambiguous)")
     delta = datetime.__sub__(dt, _EPOCH)  # the plain operation, whatever a subclass overrides
     total_micros = (delta.days * 86400 + delta.seconds) * _MICROS + delta.microseconds

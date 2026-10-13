@@ -45,7 +45,9 @@ def write_timestamps(timestamps: Iterable[LVTimestamp], byteorder: ByteOrder = "
     >>> len(write_timestamps([LVTimestamp(0), LVTimestamp(1)], "little"))
     32
     """
-    if isinstance(timestamps, LVTimestamp):
-        raise TypeError("timestamps must be an iterable of LVTimestamp, not a single one")
+    if isinstance(timestamps, (LVTimestamp, bytes, bytearray, memoryview, str)):
+        raise TypeError(
+            f"timestamps must be an iterable of LVTimestamp, not {type(timestamps).__name__}"
+        )
     _codec.check_byteorder(byteorder)
     return b"".join(require_timestamp(ts).to_bytes(byteorder) for ts in timestamps)

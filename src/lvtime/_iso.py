@@ -6,7 +6,7 @@ the microsecond, so the CLI reads its own small grammar instead:
     YYYY-MM-DD[(T| )hh:mm[:ss[(.|,)fraction]][offset]]
     YYYYMMDD[(T| )hhmm[ss[(.|,)fraction]][offset]]
 
-where ``offset`` is ``Z``, ``+hh``, ``+hh:mm`` or ``+hhmm`` (or ``-``). A missing offset
+where ``offset`` is ``Z`` (or ``z``), ``+hh``, ``+hh:mm`` or ``+hhmm`` (or ``-``). A missing offset
 means UTC. The fraction may have any number of digits and is kept exactly.
 """
 
