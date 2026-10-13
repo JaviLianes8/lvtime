@@ -66,6 +66,10 @@ def test_encode_applies_the_offset_exactly(text: str, exact: str) -> None:
         "2024-10-04T12:00:00.5+24:00",
         "2024-10-04T12:00:00.5+05:60",
         "0000-01-01T00:00:00Z",
+        "999-01-01T00:00:00Z",
+        "0241004T000000Z",
+        "12024-01-01T00:00:00Z",
+        "120240101T000000Z",
     ],
 )
 def test_encode_refuses_everything_outside_its_grammar(text: str) -> None:

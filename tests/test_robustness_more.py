@@ -140,3 +140,30 @@ def test_byteorder_is_compared_as_plain_text() -> None:
     assert LVTimestamp(1, 2).to_bytes(_AlwaysEqual("little")) == LVTimestamp(1, 2).to_bytes(  # type: ignore[arg-type]
         "little"
     )
+
+
+@pytest.mark.parametrize("bits", [65, 100, 600])
+def test_integers_just_past_64_bits_are_described_not_printed(bits: int) -> None:
+    for call in (
+        lambda: LVTimestamp(2**bits),
+        lambda: LVTimestamp(0, 2**bits),
+        lambda: lvtime.to_float(-(2**bits), 0),
+    ):
+        with pytest.raises(ValueError) as caught:
+            call()
+        assert len(str(caught.value)) < 80
+        assert f"{bits + 1} bits" in str(caught.value) or f"{bits} bits" in str(caught.value)
+
+
+def test_a_long_real_class_name_is_cut_in_messages() -> None:
+    long_type = type("L" * 5000, (), {})
+    for call in (
+        lambda: LVTimestamp(long_type()),
+        lambda: lvtime.from_datetime(long_type()),
+        lambda: lvtime.from_decimal(long_type()),
+        lambda: lvtime.write_timestamp(long_type()),
+        lambda: lvtime.read_timestamp(long_type()),
+    ):
+        with pytest.raises(TypeError) as caught:
+            call()
+        assert len(str(caught.value)) < 200

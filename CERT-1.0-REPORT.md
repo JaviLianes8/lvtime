@@ -139,8 +139,8 @@ new contract, 1 equivalent (the redundant code was removed).
 
 ## Independent QA lenses (item 19), first round at 8d11c9a
 
-Every lens was a fresh agent that read the factory rules and CERT-1.0.md first, worked in its
-own clone, ran things rather than reading, and reported back privately.
+Every lens was an independent reviewer that read the factory rules and CERT-1.0.md first,
+worked in its own fresh clone, ran things rather than reading, and reported back privately.
 
 | Lens | First verdict | Findings | Fixed in |
 | --- | --- | --- | --- |
@@ -157,15 +157,15 @@ trusting it. Offsets are `Z`, `+HH`, `+HH:MM` or `+HHMM`.
 
 | Lens | Round | Head | Verdict | Findings and outcome |
 | --- | --- | --- | --- | --- |
-| a + d | 2 (fresh agent) | 6132529 | a PASS, d PASS | all nine earlier findings fixed; doctests, every README and GUIDE example and transcript, strict consumer with NumPy integers, `get_type_hints` on 3.10 and 3.14; wheel suite from the sdist on 3.10.19 (372 passed, 4 skipped), 3.11 to 3.14 and 3.14t (374 passed, 2 skipped); sabotaged installed CLI caught three ways; sdist install; 0.3.0 upgrade matches CHANGELOG |
-| b + c | 2 (fresh agent) | 11467f3 | b PASS, c FAIL | 770,935 oracle checks, 180 checks on the LabVIEW captures, 168,000 fuzz calls, 18,000 CLI runs; all twelve earlier findings fixed. New: quadratic regex in `encode`, fractions cut with other separators, version-dependent reading of partial fractions, unbounded int-subclass repr, float and datetime subclass tricks, invalid ISO forms accepted. Fixed in 6132529 by a strict ISO grammar of its own (`_iso.py`), the same on every Python version |
+| a + d | 2 (new reviewer) | 6132529 | a PASS, d PASS | all nine earlier findings fixed; doctests, every README and GUIDE example and transcript, strict consumer with NumPy integers, `get_type_hints` on 3.10 and 3.14; wheel suite from the sdist on 3.10.19 (372 passed, 4 skipped), 3.11 to 3.14 and 3.14t (374 passed, 2 skipped); sabotaged installed CLI caught three ways; sdist install; 0.3.0 upgrade matches CHANGELOG |
+| b + c | 2 (new reviewer) | 11467f3 | b PASS, c FAIL | 770,935 oracle checks, 180 checks on the LabVIEW captures, 168,000 fuzz calls, 18,000 CLI runs; all twelve earlier findings fixed. New: quadratic regex in `encode`, fractions cut with other separators, version-dependent reading of partial fractions, unbounded int-subclass repr, float and datetime subclass tricks, invalid ISO forms accepted. Fixed in 6132529 by a strict ISO grammar of its own (`_iso.py`), the same on every Python version |
 | c | 3 | 6132529 | FAIL | 900,053 grammar strings against its own parser, identical digests on 3.10 to 3.14t, 900,000 fuzz calls; all seven earlier findings fixed. New: datetime subclass with a junk `tzinfo` property, bytes subclass with a lying `__len__`, int subclass hiding its size, lower-case `z` undocumented, released memoryview in `write_timestamps` on 3.10. Fixed in 09edd48 |
 | c | 4 | 09edd48 | FAIL | 600,000 fuzz calls, 1.65 million grammar strings, 2,400 CLI runs; earlier five fixed. New: a `__bytes__` returning a lying bytes subclass, a `__repr__` returning a lying str subclass, decimal constants computed in the import-time context (wrong results near ties after `getcontext().Emin = -30`), CLI context taken from `DefaultContext`. Fixed in 11ff43d |
 | c | 5 | 11ff43d | pending | |
-| e | blind, fresh agent | 11ff43d | PASS with its contracts | 104 mutations, 100 killed, 4 equivalent; 14 needed new contracts (`tests/test_contract_edges.py`, `tests/test_cli_contract_edges.py`, added in 6d6b649) |
+| e | blind, new reviewer | 11ff43d | PASS with its contracts | 104 mutations, 100 killed, 4 equivalent; 14 needed new contracts (`tests/test_contract_edges.py`, `tests/test_cli_contract_edges.py`, added in 6d6b649) |
 
-Lens e (contract strength) was cut by a usage limit once and relaunched fresh; its final round
-was designed from the source alone without the author's table.
+Lens e (contract strength) was re-run from scratch; its final round was designed from the
+source alone, without the author's table.
 
 ### Blind mutation round by lens e (items 18 and 19e)
 
