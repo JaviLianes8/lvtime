@@ -136,3 +136,19 @@ new contract, 1 equivalent (the redundant code was removed).
   `from_float(-2**-60)`, `to_decimal` trailing zeros, `LVTimestamp(1.5, 0)`,
   `from_decimal("abc")`, `from_float(inf)` and `encode` of nine fractional digits change as
   CHANGELOG 1.0.0 lists.
+
+## Independent QA lenses (item 19), first round at 8d11c9a
+
+Every lens was a fresh agent that read the factory rules and CERT-1.0.md first, worked in its
+own clone, ran things rather than reading, and reported back privately.
+
+| Lens | First verdict | Findings | Fixed in |
+| --- | --- | --- | --- |
+| a. API and docs | FAIL (2 medium, 5 low, info) | CLI `encode` took an offset's fraction for the time's; `LVTimestamp` constructor typed `int` so NumPy integers failed `mypy --strict`; a test file over 200 lines; Flatten To String claimed as captured; four methods without examples; `_exact` docstring 0.8 wording; inconsistent out-of-range messages | 433bdf2, 97aa846 |
+| b. Correctness and ground truth | FAIL (1 medium, 2 low, 2 info) | 6,986,448 library cases and 180,600 CLI cases against its own Fraction oracle, NI rows, npTDMS and the LabVIEW captures: 0 library mismatches. CLI `encode` cut basic-form fractions to the microsecond, misread offsets with seconds, and read fractions of minutes or hours as seconds | 73aaf4b |
+| c. Adversarial and robustness | FAIL (1 medium-low, 6 low, info) | 152,963 fuzz cases, 26 scaling shapes (all linear), 366 CLI runs: a customised `decimal.DefaultContext` leaked in; an unbounded repr in one message; lying float and Decimal subclasses; caller decimal flags set; stdin `None` or failing, closed stderr (exit 120), 30 KB argparse echo, unicode digits as a fraction | 433bdf2 |
+| d. Packaging and real e2e | PASS (6 low) | all five interpreters and 3.14t green from the installed wheel, sabotaged CLI caught, 0.3.0 upgrade matches; CHANGELOG claimed one change 0.3.0 already had and omitted two error-type changes; basic ISO form and offsets with seconds in `encode`; error text rewritten; skip message pointed at a script the sdist lacks | 73aaf4b |
+
+Decision on CLI offsets: CPython's `fromisoformat` reads `+00:00:00.5` as `+00:00` while it
+keeps `+05:30:00.5`, so `encode` now refuses every UTC offset with seconds instead of
+trusting it. Offsets are `Z`, `+HH`, `+HH:MM` or `+HHMM`.
