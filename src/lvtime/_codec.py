@@ -45,7 +45,9 @@ def as_bytes(data: BytesLike) -> bytes:
     if type(data) is bytes:
         return data
     if isinstance(data, (bytes, bytearray, memoryview)):
-        return bytes(data)  # a plain copy, whatever a subclass claims about itself
+        # Copy the raw buffer: neither __bytes__ nor __len__ of a subclass is consulted.
+        with memoryview(data) as view:
+            return view.tobytes()
     raise TypeError(f"data must be bytes, bytearray or memoryview, got {type(data).__name__}")
 
 

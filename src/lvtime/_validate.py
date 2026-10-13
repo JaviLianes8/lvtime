@@ -21,7 +21,7 @@ def short(value: object) -> str:
             return f"an integer of {number.bit_length()} bits"
         return str(number)
     try:
-        text = repr(value)
+        text = str.__add__("", repr(value))  # a plain str, whatever repr returned
     except Exception:
         return f"a {type(value).__name__} object"
     if len(text) > _SHOW_LIMIT:

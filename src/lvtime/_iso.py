@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
-from decimal import Context, Decimal, localcontext
+from decimal import Decimal, localcontext
 
+from ._exact import exact_context
 from ._timestamp import LVTimestamp
 from ._validate import short
 
@@ -62,5 +63,5 @@ def parse_iso(text: str) -> LVTimestamp:
     digits = match["frac"]
     if digits is None:
         return whole
-    with localcontext(Context(prec=len(digits) + 40)):
+    with localcontext(exact_context(len(digits) + 40)):
         return LVTimestamp.from_decimal(whole.to_decimal() + Decimal("0." + digits))

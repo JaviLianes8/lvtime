@@ -31,18 +31,25 @@ _POW5_64 = 5**64
 # Inputs are first cut to 100 decimal places with ROUND_05UP, which keeps the side
 # of every tie (ties have 65 places), so the single rounding to 2**-64 stays exact.
 _PLACES = 100
-_QUANTUM = Decimal(1).scaleb(-_PLACES)
+_QUANTUM = Decimal((0, (1,), -_PLACES))  # built from digits, so no context applies
+
+
 # Every setting is explicit, so a customised decimal.DefaultContext cannot leak in.
-_CONTEXT = Context(
-    prec=_PLACES + 30,
-    rounding=ROUND_HALF_EVEN,
-    Emin=MIN_EMIN,
-    Emax=MAX_EMAX,
-    capitals=1,
-    clamp=0,
-    flags=[],
-    traps=[InvalidOperation],
-)
+def exact_context(prec: int) -> Context:
+    """Return a decimal context with every setting explicit and only invalid operations trapped."""
+    return Context(
+        prec=prec,
+        rounding=ROUND_HALF_EVEN,
+        Emin=MIN_EMIN,
+        Emax=MAX_EMAX,
+        capitals=1,
+        clamp=0,
+        flags=[],
+        traps=[InvalidOperation],
+    )
+
+
+_CONTEXT = exact_context(_PLACES + 30)
 
 
 def _as_decimal(value: ExactInput) -> Decimal:
