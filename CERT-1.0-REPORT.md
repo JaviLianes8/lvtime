@@ -23,7 +23,7 @@ Progress:
 | 3 | Docstrings with runnable examples, doctests pass | PASS | every module doctested, every public name and method has `>>>` (`test_docs`); README and GUIDE `pycon` blocks and `$ lvtime` transcripts executed against the real command |
 | 4 | Typed end to end | PASS | `mypy --strict src tests` clean; `py.typed` shipped; external strict consumer (NumPy integers included) clean on 3.10 and 3.14; `get_type_hints` on every public name |
 | 5 | Typed, documented, safe errors | PASS | GUIDE error table; one out-of-range message; messages bounded for huge inputs, lying reprs and long type names (`test_hostile`, `test_robustness*`) |
-| 6 | Contract asserts the full promise | PASS | 458 tests: a promise test per public name, exact oracle, real LabVIEW captures, CLI end to end, edge contracts from the blind mutation round and both reviews |
+| 6 | Contract asserts the full promise | PASS | 461 tests: a promise test per public name, exact oracle, real LabVIEW captures, CLI end to end, edge contracts from the blind mutation round and both reviews |
 | 7 | Real ground truth | PASS | seven files written by LabVIEW 2026 on this PC (TDMS little-endian and datalog big-endian holding the same instants, LabVIEW's double, 128-bit add and subtract); NI pages and npTDMS fetched 2026-10-12 (manifest tracked, copies local); npTDMS 1.12.1 agrees; exact `Fraction` oracle |
 | 8 | Real e2e incl. PyPI upgrade | PASS | wheel in clean venvs, suite from the sdist with `src` removed driving the installed console script, a sabotaged installed CLI caught; PyPI 0.3.0 upgraded in place matches CHANGELOG |
 | 9 | Seeded fuzz, no crash, hang or blow-up | PASS | seeded oracle tests in the suite; lens c rounds totalling several million fuzz, grammar and CLI cases; every path linear |
@@ -32,10 +32,10 @@ Progress:
 | 12 | CHANGELOG dated 1.0.0 | PASS | `## [1.0.0] - 2026-10-13` with the stable surface and every behaviour change |
 | 13 | pyproject | PASS | 1.0.0, Production/Stable, 3.10 to 3.14, MIT, Homepage/Source/Issues/Changelog, keywords, `dependencies = []` (contract-tested) |
 | 14 | sdist and wheel contents | PASS | wheel: 10 modules, `py.typed`, LICENSE; sdist: src, tests, the LabVIEW captures (the author's own program output, with a provenance manifest), the sources manifest, docs; no fetched NI or npTDMS copies |
-| 15 | Gates exit 0 alone | PASS | `ruff format --check .`, `ruff check .`, `mypy --strict src`, `pytest` (456 passed, 2 skipped with the sources present), each run alone |
+| 15 | Gates exit 0 alone | PASS | `ruff format --check .`, `ruff check .`, `mypy --strict src`, `pytest` (459 passed, 2 skipped with the sources present; 461 passed with npTDMS installed too), each run alone |
 | 16 | Independent reviewer | PASS | first review and re-review findings (7 surviving reviewer mutations, report wording, stale numbers) all fixed and re-reviewed |
 | 17 | PR, trace guard | ready | PR #3 from `release/1.0.0`, trace guard CLEAN; merge and PyPI publish left to the maintainer |
-| 18 | Mutation round | PASS | author: 45 mutations, 1 survivor closed, 1 equivalent; blind lens e: 104 mutations, 14 survivors closed, 4 equivalent; reviewers: 27 more, 7 survivors closed |
+| 18 | Mutation round | PASS | author: 45 mutations, 1 survivor closed, 1 equivalent; blind lens e: 104 mutations, 14 survivors closed, 4 equivalent; reviewers: 47 more, 10 survivors closed |
 | 19 | Five QA lenses | PASS | a, b, c, d, e all PASS after their findings were fixed and re-verified (lens c took seven rounds) |
 
 ## Baseline on 0.3.0 (before any change)
@@ -313,6 +313,7 @@ never applies).
 | --- | --- | --- | --- |
 | 1 | 35e858d | FAIL | items 1 to 15 and 17 PASS; 10 mutations of its own, 3 survived (`short` threshold 64 to 640 bits, a 3-digit ISO year, the type-name cap removed); automation wording in this report; stale numbers. Fixed in 368127b |
 | 2 | 2f42434 | FAIL | the three survivors killed, wording fixed; 17 new mutations, 4 survived (`"LITTLE"` accepted, `write_timestamps("")` returning `b""`, leading spaces in CLI input, a 40-character repr cut one early). Fixed in a3d832e, each re-applied and killed |
+| 3 | bc02139, 200624a | see final verdict | 20 new mutations, 3 survived (message boundaries); contracts added in 200624a, all 20 killed on re-application; 1,050,000 seeded fuzz calls clean |
 
 Reviewer mutations that survived and the contracts that now kill them:
 
@@ -325,6 +326,9 @@ Reviewer mutations that survived and the contracts that now kill them:
 | `str` allowed as an iterable in `write_timestamps` | `_io.py` | `test_robustness::test_write_timestamps_refuses_buffers_and_text` (empty string) |
 | CLI input only right-stripped | `_cli.py` | `test_cli_encode_e2e::test_encode_ignores_surrounding_whitespace` |
 | a repr of exactly 40 characters cut | `_validate.py` | `test_hostile::test_a_value_is_shown_whole_up_to_the_limit_and_cut_after_it` |
+| a 64-bit value described instead of printed | `_validate.py` | `test_hostile::test_a_64_bit_value_is_printed_and_a_wider_one_described` |
+| `from_float` type guard removed (wrong wording) | `_convert.py` | `test_hostile::test_from_float_names_both_accepted_types` |
+| a type name of exactly 40 characters cut | `_validate.py` | `test_hostile::test_a_type_name_is_shown_whole_up_to_the_limit` |
 
 ## Decisions for the maintainer
 
