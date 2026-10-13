@@ -313,7 +313,7 @@ never applies).
 | --- | --- | --- | --- |
 | 1 | 35e858d | FAIL | items 1 to 15 and 17 PASS; 10 mutations of its own, 3 survived (`short` threshold 64 to 640 bits, a 3-digit ISO year, the type-name cap removed); automation wording in this report; stale numbers. Fixed in 368127b |
 | 2 | 2f42434 | FAIL | the three survivors killed, wording fixed; 17 new mutations, 4 survived (`"LITTLE"` accepted, `write_timestamps("")` returning `b""`, leading spaces in CLI input, a 40-character repr cut one early). Fixed in a3d832e, each re-applied and killed |
-| 3 | bc02139, 200624a | see final verdict | 20 new mutations, 3 survived (message boundaries); contracts added in 200624a, all 20 killed on re-application; 1,050,000 seeded fuzz calls clean |
+| 3 | bc02139, 200624a, e40235f | PASS | 20 new mutations, 3 survived (message boundaries); contracts added in 200624a, all 20 killed on re-application; 1,050,000 seeded fuzz calls clean; items 1 to 19 PASS (17 ready for the maintainer) |
 
 Reviewer mutations that survived and the contracts that now kill them:
 
