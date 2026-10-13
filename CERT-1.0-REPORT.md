@@ -10,9 +10,33 @@ Progress:
 - [x] Contract, fuzz and author mutation round (items 6, 9, 18)
 - [x] Docs: README, GUIDE, CHANGELOG (items 11, 12)
 - [x] Packaging, e2e and upgrade from PyPI 0.3.0 (items 8, 10, 13, 14), author run
-- [ ] Independent reviewer and five QA lenses report PASS (items 16, 19)
-- [ ] Gates (item 15)
-- [ ] PR and trace guard (item 17); merge and publish left to the maintainer
+- [x] Independent reviewer and five QA lenses report PASS (items 16, 19)
+- [x] Gates (item 15)
+- [x] PR #3 and trace guard CLEAN (item 17); merge and publish left to the maintainer
+
+## Scorecard (final, at the head of PR #3)
+
+| # | Item | Verdict | Evidence |
+| --- | --- | --- | --- |
+| 1 | API reviewed for stability | PASS | Same 17 names as 0.3.0; constructor typed `SupportsIndex`; validated arguments with documented error types; true little-endian layout; every change in CHANGELOG 1.0.0 and the guide's upgrade section |
+| 2 | `__all__` exact | PASS | `test_contract::test_all_lists_exactly_the_public_api`; `test_docs::test_examples_import_only_public_names` |
+| 3 | Docstrings with runnable examples, doctests pass | PASS | every module doctested, every public name and method has `>>>` (`test_docs`); README and GUIDE `pycon` blocks and `$ lvtime` transcripts executed against the real command |
+| 4 | Typed end to end | PASS | `mypy --strict src tests` clean; `py.typed` shipped; external strict consumer (NumPy integers included) clean on 3.10 and 3.14; `get_type_hints` on every public name |
+| 5 | Typed, documented, safe errors | PASS | GUIDE error table; one out-of-range message; messages bounded for huge inputs, lying reprs and long type names (`test_hostile`, `test_robustness*`) |
+| 6 | Contract asserts the full promise | PASS | 458 tests: a promise test per public name, exact oracle, real LabVIEW captures, CLI end to end, edge contracts from the blind mutation round and both reviews |
+| 7 | Real ground truth | PASS | seven files written by LabVIEW 2026 on this PC (TDMS little-endian and datalog big-endian holding the same instants, LabVIEW's double, 128-bit add and subtract); NI pages and npTDMS fetched 2026-10-12 (manifest tracked, copies local); npTDMS 1.12.1 agrees; exact `Fraction` oracle |
+| 8 | Real e2e incl. PyPI upgrade | PASS | wheel in clean venvs, suite from the sdist with `src` removed driving the installed console script, a sabotaged installed CLI caught; PyPI 0.3.0 upgraded in place matches CHANGELOG |
+| 9 | Seeded fuzz, no crash, hang or blow-up | PASS | seeded oracle tests in the suite; lens c rounds totalling several million fuzz, grammar and CLI cases; every path linear |
+| 10 | Every interpreter on this PC | PASS | 3.10.19 (448 passed, 4 skipped), 3.11.5, 3.12.12, 3.13.2, 3.14.2 (450 passed, 2 skipped) from the installed wheel at a3d832e; 3.14t also green in lens runs |
+| 11 | README | PASS | `twine check --strict` PASSED; absolute links tested; problem, verified why (NI and npTDMS facts from fetched sources), install, quick start, GUIDE and CHANGELOG links |
+| 12 | CHANGELOG dated 1.0.0 | PASS | `## [1.0.0] - 2026-10-13` with the stable surface and every behaviour change |
+| 13 | pyproject | PASS | 1.0.0, Production/Stable, 3.10 to 3.14, MIT, Homepage/Source/Issues/Changelog, keywords, `dependencies = []` (contract-tested) |
+| 14 | sdist and wheel contents | PASS | wheel: 10 modules, `py.typed`, LICENSE; sdist: src, tests, the LabVIEW captures (the author's own program output, with a provenance manifest), the sources manifest, docs; no fetched NI or npTDMS copies |
+| 15 | Gates exit 0 alone | PASS | `ruff format --check .`, `ruff check .`, `mypy --strict src`, `pytest` (456 passed, 2 skipped with the sources present), each run alone |
+| 16 | Independent reviewer | PASS | first review and re-review findings (7 surviving reviewer mutations, report wording, stale numbers) all fixed and re-reviewed |
+| 17 | PR, trace guard | ready | PR #3 from `release/1.0.0`, trace guard CLEAN; merge and PyPI publish left to the maintainer |
+| 18 | Mutation round | PASS | author: 45 mutations, 1 survivor closed, 1 equivalent; blind lens e: 104 mutations, 14 survivors closed, 4 equivalent; reviewers: 27 more, 7 survivors closed |
+| 19 | Five QA lenses | PASS | a, b, c, d, e all PASS after their findings were fixed and re-verified (lens c took seven rounds) |
 
 ## Baseline on 0.3.0 (before any change)
 
@@ -123,7 +147,7 @@ new contract, 1 equivalent (the redundant code was removed).
 ## Packaging and end-to-end (items 8, 10, 14), author run
 
 - `python -m build` and `twine check --strict`: both artifacts PASSED.
-- Wheel: the nine modules, `py.typed`, LICENSE and metadata. Sdist: `src`, `tests` with the
+- Wheel: the package modules (nine then, ten after `_iso.py`), `py.typed`, LICENSE and metadata. Sdist: `src`, `tests` with the
   LabVIEW captures and the sources manifest, README, GUIDE, CHANGELOG, LICENSE, pyproject and
   the `.gitignore` hatchling always adds; no fetched NI or npTDMS copies, no scripts, no
   report or process notes.
@@ -161,7 +185,9 @@ trusting it. Offsets are `Z`, `+HH`, `+HH:MM` or `+HHMM`.
 | b + c | 2 (new reviewer) | 11467f3 | b PASS, c FAIL | 770,935 oracle checks, 180 checks on the LabVIEW captures, 168,000 fuzz calls, 18,000 CLI runs; all twelve earlier findings fixed. New: quadratic regex in `encode`, fractions cut with other separators, version-dependent reading of partial fractions, unbounded int-subclass repr, float and datetime subclass tricks, invalid ISO forms accepted. Fixed in 6132529 by a strict ISO grammar of its own (`_iso.py`), the same on every Python version |
 | c | 3 | 6132529 | FAIL | 900,053 grammar strings against its own parser, identical digests on 3.10 to 3.14t, 900,000 fuzz calls; all seven earlier findings fixed. New: datetime subclass with a junk `tzinfo` property, bytes subclass with a lying `__len__`, int subclass hiding its size, lower-case `z` undocumented, released memoryview in `write_timestamps` on 3.10. Fixed in 09edd48 |
 | c | 4 | 09edd48 | FAIL | 600,000 fuzz calls, 1.65 million grammar strings, 2,400 CLI runs; earlier five fixed. New: a `__bytes__` returning a lying bytes subclass, a `__repr__` returning a lying str subclass, decimal constants computed in the import-time context (wrong results near ties after `getcontext().Emin = -30`), CLI context taken from `DefaultContext`. Fixed in 11ff43d |
-| c | 5 | 11ff43d | pending | |
+| c | 5 | 11ff43d | FAIL | about 990,000 fuzz calls in three decimal-context modes, 2.5 million grammar strings, identical digests on 3.10 to 3.14t; A to D fixed. New: an `LVTimestamp` subclass skipping validation let `struct.error` escape from the writers, a faked `__class__`, metaclass names of 1 MB in messages, byteorder compared with the caller's `__eq__`. Fixed in 35e858d |
+| c | 6 | 35e858d | FAIL | 720,000 hostile calls, 1.78 million oracle cases, 2.5 million grammar strings, thread stress on six interpreters; earlier four fixed. New: an instance whose `__init__` never ran let `AttributeError` escape. Fixed in 2f42434 |
+| c | 7 | 2f42434 | PASS | 720,000 hostile calls, 1,778,548 oracle cases, 5,040,636 grammar strings, 18,000 in-process and about 1,100 subprocess CLI runs, 96,000 threaded calls; every earlier finding fixed, nothing new beyond accepted notes |
 | e | blind, new reviewer | 11ff43d | PASS with its contracts | 104 mutations, 100 killed, 4 equivalent; 14 needed new contracts (`tests/test_contract_edges.py`, `tests/test_cli_contract_edges.py`, added in 6d6b649) |
 
 Lens e (contract strength) was re-run from scratch; its final round was designed from the
@@ -280,3 +306,43 @@ Equivalent: M55 (`bytes.fromhex` already refuses non-text with `TypeError`), I04
 refuses a 24-hour offset with the same message), I09 (nothing in that block raises
 `OverflowError`), H11 (every operation under the private context is exact, so its rounding mode
 never applies).
+
+## Independent reviewer (item 16)
+
+| Review | Head | Verdict | Findings and outcome |
+| --- | --- | --- | --- |
+| 1 | 35e858d | FAIL | items 1 to 15 and 17 PASS; 10 mutations of its own, 3 survived (`short` threshold 64 to 640 bits, a 3-digit ISO year, the type-name cap removed); automation wording in this report; stale numbers. Fixed in 368127b |
+| 2 | 2f42434 | FAIL | the three survivors killed, wording fixed; 17 new mutations, 4 survived (`"LITTLE"` accepted, `write_timestamps("")` returning `b""`, leading spaces in CLI input, a 40-character repr cut one early). Fixed in a3d832e, each re-applied and killed |
+
+Reviewer mutations that survived and the contracts that now kill them:
+
+| Mutation | File | Caught by |
+| --- | --- | --- |
+| integers up to 640 bits printed in full | `_validate.py` | `test_robustness_more::test_integers_just_past_64_bits_are_described_not_printed` |
+| ISO year of 3 or 4 digits | `_iso.py` | `test_cli_encode_e2e::test_encode_refuses_everything_outside_its_grammar[999-01-01T00:00:00Z]` |
+| type names not cut | `_validate.py` | `test_robustness_more::test_a_long_real_class_name_is_cut_in_messages` |
+| byteorder compared case-insensitively | `_codec.py` | `test_validation::test_byte_order_must_be_big_or_little[LITTLE]` |
+| `str` allowed as an iterable in `write_timestamps` | `_io.py` | `test_robustness::test_write_timestamps_refuses_buffers_and_text` (empty string) |
+| CLI input only right-stripped | `_cli.py` | `test_cli_encode_e2e::test_encode_ignores_surrounding_whitespace` |
+| a repr of exactly 40 characters cut | `_validate.py` | `test_hostile::test_a_value_is_shown_whole_up_to_the_limit_and_cut_after_it` |
+
+## Decisions for the maintainer
+
+- `byteorder="little"` changes meaning: it is now the whole 16-byte value reversed (fraction
+  first), the layout of little-endian TDMS files, proven against a TDMS file and a datalog
+  LabVIEW 2026 wrote in one run. 0.3.0 users who stored little-endian bytes swap the two
+  8-byte halves (recipe in the guide). Big-endian output is unchanged.
+- No capture of a little-endian Flatten To String of a timestamp was possible; the docs only
+  claim what the TDMS and datalog captures prove.
+- CLI `encode` reads its own strict ISO 8601 grammar instead of `fromisoformat`, so it is the
+  same on every Python version; it refuses UTC offsets with seconds, because CPython reads
+  `+00:00:00.5` as `+00:00`.
+- The real LabVIEW captures (about 140 KB) ship in the sdist as test fixtures; they are the
+  author's own program output from shipped example VIs, with a provenance manifest, and contain
+  no user names or paths. The fetched NI pages and npTDMS sources stay local and git-ignored;
+  only their manifest is tracked.
+- GUIDE.md and this report are longer than 200 lines; the 200-line rule is applied to source
+  files, as in the earlier certified libraries.
+- Branch history contains intermediate wording later rewritten in this report; a squash merge
+  keeps `main` to the final state.
+- The README links to GUIDE.md and CHANGELOG.md on `main`, so publish after the merge.
