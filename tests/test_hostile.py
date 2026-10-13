@@ -79,3 +79,22 @@ def test_a_value_is_shown_whole_up_to_the_limit_and_cut_after_it() -> None:
 
     assert short("x" * 38) == repr("x" * 38)  # 40 characters with the quotes
     assert short("x" * 39).endswith("... (41 characters)")
+
+
+def test_a_64_bit_value_is_printed_and_a_wider_one_described() -> None:
+    with pytest.raises(ValueError, match=r"got 9223372036854775808$"):
+        LVTimestamp(2**63)
+    with pytest.raises(ValueError, match=r"got an integer of 65 bits$"):
+        LVTimestamp(2**64)
+
+
+def test_from_float_names_both_accepted_types() -> None:
+    with pytest.raises(TypeError, match=r"^value must be a float or an integer, got str$"):
+        lvtime.from_float("abc")  # type: ignore[arg-type]
+
+
+def test_a_type_name_is_shown_whole_up_to_the_limit() -> None:
+    exact = type("T" * 40, (), {})
+    with pytest.raises(TypeError) as caught:
+        LVTimestamp(exact())
+    assert str(caught.value).endswith("T" * 40)
