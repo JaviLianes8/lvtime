@@ -41,13 +41,19 @@ class LVTimestamp:
         object.__setattr__(self, "seconds", checked_seconds)
         object.__setattr__(self, "frac", checked_frac)
 
+    def _fields(self) -> tuple[int, int]:
+        try:
+            return object.__getattribute__(self, "seconds"), object.__getattribute__(self, "frac")
+        except AttributeError:
+            raise TypeError("this LVTimestamp was never initialised") from None
+
     def to_datetime(self) -> datetime:
         """Return a UTC-aware datetime rounded to the microsecond; see :func:`to_datetime`.
 
         >>> LVTimestamp(0, 1 << 63).to_datetime().isoformat()
         '1904-01-01T00:00:00.500000+00:00'
         """
-        return _convert.to_datetime(self.seconds, self.frac)
+        return _convert.to_datetime(*self._fields())
 
     @classmethod
     def from_datetime(cls, dt: datetime) -> LVTimestamp:
@@ -65,7 +71,7 @@ class LVTimestamp:
         >>> LVTimestamp(2082844800, 1 << 62).to_unix()
         0.25
         """
-        return _convert.to_unix(self.seconds, self.frac)
+        return _convert.to_unix(*self._fields())
 
     @classmethod
     def from_unix(cls, value: float) -> LVTimestamp:
@@ -82,7 +88,7 @@ class LVTimestamp:
         >>> LVTimestamp(-1, 1 << 63).to_float()
         -0.5
         """
-        return _convert.to_float(self.seconds, self.frac)
+        return _convert.to_float(*self._fields())
 
     @classmethod
     def from_float(cls, value: float) -> LVTimestamp:
@@ -99,7 +105,7 @@ class LVTimestamp:
         >>> LVTimestamp(10, 1 << 63).to_decimal()
         Decimal('10.5')
         """
-        return _exact.to_decimal(self.seconds, self.frac)
+        return _exact.to_decimal(*self._fields())
 
     @classmethod
     def from_decimal(cls, value: ExactInput) -> LVTimestamp:
@@ -116,7 +122,7 @@ class LVTimestamp:
         >>> LVTimestamp(2082844800, 1).to_unix_decimal()
         Decimal('5.42101086242752217003726400434970855712890625E-20')
         """
-        return _exact.to_unix_decimal(self.seconds, self.frac)
+        return _exact.to_unix_decimal(*self._fields())
 
     @classmethod
     def from_unix_decimal(cls, value: ExactInput) -> LVTimestamp:
@@ -133,7 +139,7 @@ class LVTimestamp:
         >>> LVTimestamp(1, 2).to_bytes("little").hex()
         '02000000000000000100000000000000'
         """
-        return _codec.pack(self.seconds, self.frac, byteorder)
+        return _codec.pack(*self._fields(), byteorder)
 
     @classmethod
     def from_bytes(cls, data: BytesLike, byteorder: ByteOrder = "big") -> LVTimestamp:

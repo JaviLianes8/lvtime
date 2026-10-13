@@ -18,7 +18,7 @@ from decimal import (
     InvalidOperation,
     localcontext,
 )
-from typing import SupportsIndex
+from typing import SupportsIndex, cast
 
 from ._convert import LABVIEW_UNIX_EPOCH_OFFSET, OUT_OF_RANGE, split_units
 from ._validate import I64_MAX, I64_MIN, check_pair, div_round_half_even, short, type_name
@@ -53,22 +53,24 @@ _CONTEXT = exact_context(_PLACES + 30)
 
 
 def _as_decimal(value: ExactInput) -> Decimal:
-    if isinstance(value, bool):
+    kind = type(value)  # type() cannot be faked like __class__
+    if issubclass(kind, bool):
         raise TypeError("value must be a Decimal, int or str, not a bool")
-    if isinstance(value, Decimal):
+    if issubclass(kind, Decimal):
         number = Decimal(value)  # drops any subclass behaviour
-    elif isinstance(value, int):
-        if int.bit_length(value) > 2 * _FRAC_BITS:
+    elif issubclass(kind, int):
+        whole = int.__index__(cast(int, value))
+        if whole.bit_length() > 2 * _FRAC_BITS:
             raise ValueError(OUT_OF_RANGE)
-        number = Decimal(value)
-    elif isinstance(value, str):
+        number = Decimal(whole)
+    elif issubclass(kind, str):
         try:
             with localcontext(_CONTEXT):  # keeps the caller's flags clean
                 number = Decimal(value)
         except InvalidOperation:
             raise ValueError(f"not a decimal number: {short(value)}") from None
     else:
-        hint = " (use from_float for a float)" if isinstance(value, float) else ""
+        hint = " (use from_float for a float)" if issubclass(kind, float) else ""
         raise TypeError(f"value must be a Decimal, int or str, got {type_name(value)}{hint}")
     if not number.is_finite():
         raise ValueError(f"value must be a finite number, got {short(value)}")

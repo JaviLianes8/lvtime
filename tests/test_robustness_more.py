@@ -167,3 +167,20 @@ def test_a_long_real_class_name_is_cut_in_messages() -> None:
         with pytest.raises(TypeError) as caught:
             call()
         assert len(str(caught.value)) < 200
+
+
+class _NeverInitialised(LVTimestamp):
+    def __init__(self) -> None:
+        pass
+
+
+def test_an_uninitialised_timestamp_is_a_type_error() -> None:
+    blank = LVTimestamp.__new__(LVTimestamp)
+    for stamp in (_NeverInitialised(), blank):
+        for call in (stamp.to_bytes, stamp.hex, stamp.to_datetime, stamp.to_decimal, stamp.to_unix):
+            with pytest.raises(TypeError, match="never initialised"):
+                call()
+        with pytest.raises(TypeError):
+            lvtime.write_timestamp(stamp)
+        with pytest.raises(TypeError):
+            lvtime.write_timestamps([stamp])
